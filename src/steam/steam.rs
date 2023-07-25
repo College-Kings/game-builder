@@ -1,7 +1,15 @@
-#![allow(dead_code)]
-use std::{collections::HashMap, fs::File, io::Write, path::PathBuf, process::Command};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{BufRead, BufReader, Write},
+    path::PathBuf,
+    process::{Command, Stdio},
+};
 
-use crate::{build_game, steam::app_info::AppDLC};
+use crate::{
+    build_game, CONTENT_BUILDER_PATH, GAME_DIR, STEAM_BUILD_ACCOUNT_PASSWORD,
+    STEAM_BUILD_ACCOUNT_USERNAME, VERSION,
+};
 
 use super::{
     app_build::AppBuild,
@@ -9,18 +17,15 @@ use super::{
     depot_build_config::{DepotBuildConfig, FileMapping},
 };
 
-const CONTENT_BUILDER_PATH: &str = r#"D:\Steam Build\sdk\tools\ContentBuilder"#;
-const STEAM_BUILD_ACCOUNT_USERNAME: &str = "Crimson_Sky_Admin";
-const STEAM_BUILD_ACCOUNT_PASSWORD: &str = r#"UFY5LDXQff&rTu2h9T3LhmEd8M6rXvV0"#;
-
-pub fn steam(game_path: PathBuf, version: &str) {
+pub fn steam() {
     let apps_info: HashMap<&str, AppInfo> = HashMap::from([
         (
             "College Kings",
             AppInfo {
                 name: "College Kings".into(),
                 app_id: 1463120,
-                content_path: r#"D:\Crimson Sky\College Kings\CollegeKings-dists\CollegeKings-market"#.into(),
+                content_path:
+                    r#"D:\Crimson Sky\College Kings\CollegeKings-dists\CollegeKings-market"#.into(),
                 additional_dlc: Vec::new(),
             },
         ),
@@ -29,22 +34,28 @@ pub fn steam(game_path: PathBuf, version: &str) {
             AppInfo {
                 name: "College Kings 2".into(),
                 app_id: 1924480,
-                content_path: r#"D:\Crimson Sky\College Kings\CollegeKings2-dists\CollegeKings2-market"#.into(),
-                additional_dlc: vec![AppDLC {
-                    name: "College Kings 2 - Episode 2 \"The Pool Party\"".into(),
-                    app_id: 2100540,
-                    content_path: r#"D:\Crimson Sky\College Kings\CollegeKings2-dists\CollegeKings2-market\game\ep2.rpa"#.into(),
-                },
-                AppDLC {
-                    name: "College Kings 2 - Episode 3 \"Back To Basics\"".into(),
-                    app_id: 2267960,
-                    content_path: r#"D:\Crimson Sky\College Kings\CollegeKings2-dists\CollegeKings2-market\game\ep3.rpa"#.into(),
-                }],
+                content_path:
+                    r#"D:\Crimson Sky\College Kings\CollegeKings2-dists\CollegeKings2-market"#
+                        .into(),
+                additional_dlc: vec![
+                    AppInfo {
+                        name: "College Kings 2 - Episode 2 \"The Pool Party\"".into(),
+                        app_id: 2100540,
+                        content_path: r#"game\ep2.rpa"#.into(),
+                        additional_dlc: Vec::new(),
+                    },
+                    AppInfo {
+                        name: "College Kings 2 - Episode 3 \"Back To Basics\"".into(),
+                        app_id: 2267960,
+                        content_path: r#"game\ep3.rpa"#.into(),
+                        additional_dlc: Vec::new(),
+                    },
+                ],
             },
         ),
     ]);
 
-    let game_name = game_path
+    let game_name = PathBuf::from(GAME_DIR)
         .file_name()
         .unwrap()
         .to_str()
@@ -54,30 +65,57 @@ pub fn steam(game_path: PathBuf, version: &str) {
     let app_info = apps_info.get(game_name.as_str()).unwrap();
 
     println!("Building Game...");
-    // build_game("market", &game_path);
+    build_game("market");
 
     println!("Creating Depot Script...");
-    create_depot_script(app_info, &app_info.content_path);
+    create_depot_script(app_info, None);
 
     println!("Creating App Script...");
-    create_app_script(app_info, version.into());
+    create_app_script(app_info, None, VERSION.into());
 
-    println!("Uploading Game...")
-    // upload_game();
+    println!("Uploading Game...");
+    upload_game(app_info);
+
+    for dlc_info in app_info.additional_dlc.iter() {
+        println!("Creating DLC Depot Script...");
+        create_depot_script(app_info, Some(dlc_info));
+
+        println!("Creating DLC App Script...");
+        create_app_script(app_info, Some(dlc_info), VERSION.into());
+
+        println!("Uploading DLC {}", dlc_info.name);
+        upload_game(dlc_info)
+    }
 }
 
-fn create_depot_script(app_info: &AppInfo, game_path: &String) {
-    let depot_id = app_info.app_id + 1;
-
-    let depot_build = DepotBuildConfig::new(
-        depot_id,
-        PathBuf::from(game_path),
-        FileMapping {
-            local_path: "*".into(),
-            depot_path: ".".into(),
-            recursive: "1".into(),
-        },
-    );
+fn create_depot_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>) {
+    let depot_build = match dlc_info {
+        Some(dlc_info) => DepotBuildConfig::new(
+            dlc_info.app_id,
+            PathBuf::from(&app_info.content_path),
+            FileMapping::new(
+                dlc_info.content_path.clone(),
+                PathBuf::from(dlc_info.content_path.clone())
+                    .parent()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+                false,
+            ),
+            Vec::new(),
+        ),
+        None => DepotBuildConfig::new(
+            app_info.app_id + 1,
+            PathBuf::from(&app_info.content_path),
+            FileMapping::new("*".into(), ".".into(), true),
+            app_info
+                .additional_dlc
+                .iter()
+                .map(|dlc| dlc.content_path.clone())
+                .collect(),
+        ),
+    };
 
     // IMPROVEMENT: Create formatter for handling VDF files
     let vdf_content = format!(
@@ -91,12 +129,19 @@ fn create_depot_script(app_info: &AppInfo, game_path: &String) {
         "DepotPath" "{}"
         "recursive" "{}"
     }}
+{}
 }}"#,
         depot_build.depot_id,
         depot_build.content_root,
         depot_build.file_mapping.local_path,
         depot_build.file_mapping.depot_path,
         depot_build.file_mapping.recursive,
+        depot_build
+            .file_exclusions
+            .into_iter()
+            .map(|f| format!(r#"    "FileExclusion" "{}""#, f))
+            .collect::<Vec<String>>()
+            .join("\n")
     );
 
     let mut file_path = PathBuf::from(CONTENT_BUILDER_PATH);
@@ -107,18 +152,36 @@ fn create_depot_script(app_info: &AppInfo, game_path: &String) {
     file.write_all(vdf_content.as_bytes()).unwrap();
 }
 
-fn create_app_script(app_info: &AppInfo, version: String) {
+fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>, version: String) {
     let mut build_output = PathBuf::from(CONTENT_BUILDER_PATH);
     build_output.push(r#"output"#);
 
-    let app_build = AppBuild::new(
-        app_info.app_id,
-        version,
-        build_output,
-        true,
-        1924481,
-        r#"D:\Steam Build\sdk\tools\ContentBuilder\scripts\depot_1924481.vdf"#.into(),
-    );
+    let app_build = match dlc_info {
+        Some(dlc_info) => AppBuild::new(
+            dlc_info.app_id,
+            version,
+            build_output,
+            true,
+            dlc_info.app_id,
+            format!(
+                r#"D:\Steam Build\sdk\tools\ContentBuilder\scripts\depot_{}_DEV.vdf"#,
+                dlc_info.app_id
+            )
+            .into(),
+        ),
+        None => AppBuild::new(
+            app_info.app_id,
+            version,
+            build_output,
+            true,
+            app_info.app_id + 1,
+            format!(
+                r#"D:\Steam Build\sdk\tools\ContentBuilder\scripts\depot_{}_DEV.vdf"#,
+                app_info.app_id + 1
+            )
+            .into(),
+        ),
+    };
 
     // IMPROVEMENT: Create formatter for handling VDF files
     let vdf_content = format!(
@@ -155,24 +218,40 @@ fn create_app_script(app_info: &AppInfo, version: String) {
     file.write_all(vdf_content.as_bytes()).unwrap();
 }
 
-fn upload_game() {
+fn upload_game(app_info: &AppInfo) {
     let mut steam_cmd = PathBuf::from(CONTENT_BUILDER_PATH);
     steam_cmd.push(r#"builder\steamcmd.exe"#);
 
     let mut app_script = PathBuf::from(CONTENT_BUILDER_PATH);
-    app_script.push(r#"scripts\app_1924480.vdf"#);
+    app_script.push(format!(r#"scripts\app_{}_DEV.vdf"#, app_info.app_id));
 
-    let output = Command::new(steam_cmd)
+    let mut steam_process = Command::new(steam_cmd)
         .arg("+login")
         .arg(STEAM_BUILD_ACCOUNT_USERNAME)
         .arg(STEAM_BUILD_ACCOUNT_PASSWORD)
         .arg("+run_app_build")
         .arg(app_script.to_str().unwrap())
         .arg("+quit")
-        .output()
+        .stdout(Stdio::piped())
+        .spawn()
         .expect("failed to execute process");
 
-    println!("status: {}", output.status);
-    println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
-    println!("stdout: {}", std::str::from_utf8(&output.stdout).unwrap());
+    if let Some(steam_stdout) = steam_process.stdout.take() {
+        let reader = BufReader::new(steam_stdout);
+
+        for line in reader.lines() {
+            if let Ok(line) = line {
+                println!("{}", line)
+            }
+        }
+    }
+
+    let status = steam_process
+        .wait()
+        .expect("Failed to wait for steam process.");
+    if status.success() {
+        println!("Upload successful")
+    } else {
+        println!("Upload failed: {:?}", status.code())
+    }
 }
