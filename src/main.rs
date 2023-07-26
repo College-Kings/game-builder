@@ -15,11 +15,12 @@ const STEAM_BUILD_ACCOUNT_USERNAME: &str = "Crimson_Sky_Admin";
 const STEAM_BUILD_ACCOUNT_PASSWORD: &str = r#"UFY5LDXQff&rTu2h9T3LhmEd8M6rXvV0"#;
 const RENPY_DIR: &str = r#"D:\renpy-sdk"#;
 const GAME_DIR: &str = r#"D:\Crimson Sky\College Kings\College-Kings-2"#;
+const PREVIEW: bool = false;
 
 const IS_STEAM: bool = true;
-const VERSION: &str = "DEV";
+const VERSION: &str = "3.1.13";
 
-pub fn build_game(package: &str) {
+pub fn build_game(package: &str, format: &str) {
     let original_dir = env::current_dir().unwrap();
     env::set_current_dir(RENPY_DIR).unwrap();
 
@@ -28,6 +29,8 @@ pub fn build_game(package: &str) {
         .arg("distribute")
         .arg("--package")
         .arg(package)
+        .arg("--format")
+        .arg(format)
         .arg(GAME_DIR)
         .stdout(Stdio::piped())
         .spawn()

@@ -1,14 +1,13 @@
+use crate::{
+    build_game, CONTENT_BUILDER_PATH, GAME_DIR, PREVIEW, STEAM_BUILD_ACCOUNT_PASSWORD,
+    STEAM_BUILD_ACCOUNT_USERNAME, VERSION,
+};
 use std::{
     collections::HashMap,
     fs::File,
     io::{BufRead, BufReader, Write},
     path::PathBuf,
     process::{Command, Stdio},
-};
-
-use crate::{
-    build_game, CONTENT_BUILDER_PATH, GAME_DIR, STEAM_BUILD_ACCOUNT_PASSWORD,
-    STEAM_BUILD_ACCOUNT_USERNAME, VERSION,
 };
 
 use super::{
@@ -41,13 +40,13 @@ pub fn steam() {
                     AppInfo {
                         name: "College Kings 2 - Episode 2 \"The Pool Party\"".into(),
                         app_id: 2100540,
-                        content_path: r#"game\ep2.rpa"#.into(),
+                        content_path: r#"*ep2.rpa"#.into(),
                         additional_dlc: Vec::new(),
                     },
                     AppInfo {
                         name: "College Kings 2 - Episode 3 \"Back To Basics\"".into(),
                         app_id: 2267960,
-                        content_path: r#"game\ep3.rpa"#.into(),
+                        content_path: r#"*ep3.rpa"#.into(),
                         additional_dlc: Vec::new(),
                     },
                 ],
@@ -65,7 +64,7 @@ pub fn steam() {
     let app_info = apps_info.get(game_name.as_str()).unwrap();
 
     println!("Building Game...");
-    build_game("market");
+    build_game("market", "directory");
 
     println!("Creating Depot Script...");
     create_depot_script(app_info, None);
@@ -93,16 +92,7 @@ fn create_depot_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>) {
         Some(dlc_info) => DepotBuildConfig::new(
             dlc_info.app_id,
             PathBuf::from(&app_info.content_path),
-            FileMapping::new(
-                dlc_info.content_path.clone(),
-                PathBuf::from(dlc_info.content_path.clone())
-                    .parent()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .to_string(),
-                false,
-            ),
+            FileMapping::new(dlc_info.content_path.clone(), ".".into(), true),
             Vec::new(),
         ),
         None => DepotBuildConfig::new(
@@ -161,7 +151,7 @@ fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>, version: St
             dlc_info.app_id,
             version,
             build_output,
-            true,
+            PREVIEW,
             dlc_info.app_id,
             format!(
                 r#"D:\Steam Build\sdk\tools\ContentBuilder\scripts\depot_{}_DEV.vdf"#,
@@ -173,7 +163,7 @@ fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>, version: St
             app_info.app_id,
             version,
             build_output,
-            true,
+            PREVIEW,
             app_info.app_id + 1,
             format!(
                 r#"D:\Steam Build\sdk\tools\ContentBuilder\scripts\depot_{}_DEV.vdf"#,
