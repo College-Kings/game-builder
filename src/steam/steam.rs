@@ -136,7 +136,7 @@ fn create_depot_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>) {
 
     let mut file_path = PathBuf::from(CONTENT_BUILDER_PATH);
     file_path.push("scripts");
-    file_path.push(format!("depot_{}_DEV.vdf", depot_build.depot_id));
+    file_path.push(format!("depot_{}.vdf", depot_build.depot_id));
 
     let mut file = File::create(file_path).unwrap();
     file.write_all(vdf_content.as_bytes()).unwrap();
@@ -154,7 +154,7 @@ fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>, version: St
             PREVIEW,
             dlc_info.app_id,
             format!(
-                r#"D:\Steam Build\sdk\tools\ContentBuilder\scripts\depot_{}_DEV.vdf"#,
+                r#"D:\Steam Build\sdk\tools\ContentBuilder\scripts\depot_{}.vdf"#,
                 dlc_info.app_id
             )
             .into(),
@@ -166,7 +166,7 @@ fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>, version: St
             PREVIEW,
             app_info.app_id + 1,
             format!(
-                r#"D:\Steam Build\sdk\tools\ContentBuilder\scripts\depot_{}_DEV.vdf"#,
+                r#"D:\Steam Build\sdk\tools\ContentBuilder\scripts\depot_{}.vdf"#,
                 app_info.app_id + 1
             )
             .into(),
@@ -202,7 +202,7 @@ fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>, version: St
 
     let mut file_path = PathBuf::from(CONTENT_BUILDER_PATH);
     file_path.push("scripts");
-    file_path.push(format!("app_{}_DEV.vdf", app_build.app_id));
+    file_path.push(format!("app_{}.vdf", app_build.app_id));
 
     let mut file = File::create(file_path).unwrap();
     file.write_all(vdf_content.as_bytes()).unwrap();
@@ -213,7 +213,7 @@ fn upload_game(app_info: &AppInfo) {
     steam_cmd.push(r#"builder\steamcmd.exe"#);
 
     let mut app_script = PathBuf::from(CONTENT_BUILDER_PATH);
-    app_script.push(format!(r#"scripts\app_{}_DEV.vdf"#, app_info.app_id));
+    app_script.push(format!(r#"scripts\app_{}.vdf"#, app_info.app_id));
 
     let mut steam_process = Command::new(steam_cmd)
         .arg("+login")
