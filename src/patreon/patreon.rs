@@ -1,6 +1,5 @@
 use std::{fs::File, path::PathBuf, thread, time::Duration};
 
-use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::blocking::Client;
 use tokio::time;
 
@@ -30,7 +29,7 @@ pub fn upload_game(game_name: &str, os: &str) {
 
     let game_name_without_spaces = game_name.replace(' ', "");
 
-    let bunny_root = BUNNY_PATH_TEMPLATE.replace("{}", &game_name_without_spaces.to_lowercase());
+    let bunny_root = BUNNY_PATH_TEMPLATE.replace("{}", &game_name.replace(' ', "_").to_lowercase());
     let url = format!(
         "{}/{}-{}-{}.zip",
         bunny_root, game_name_without_spaces, VERSION, os
@@ -50,14 +49,6 @@ pub fn upload_game(game_name: &str, os: &str) {
     let file_size = file.metadata().unwrap().len();
 
     let client = Client::builder().timeout(None).build().unwrap();
-
-    let pb = ProgressBar::new(file_size);
-    pb.set_style(
-        ProgressStyle::default_bar()
-            .template("[{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})")
-            .unwrap()
-            .progress_chars("##-"),
-    );
 
     let response = client
         .put(url)
