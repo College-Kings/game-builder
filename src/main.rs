@@ -18,10 +18,7 @@ use steam::steam::steam;
 use tokio::time;
 
 const CONTENT_BUILDER_PATH: &str = r#"D:\Steam Build\sdk\tools\ContentBuilder"#;
-const STEAM_BUILD_ACCOUNT_USERNAME: &str = "Crimson_Sky_Admin";
-const STEAM_BUILD_ACCOUNT_PASSWORD: &str = r#"UFY5LDXQff&rTu2h9T3LhmEd8M6rXvV0"#;
 const BUNNY_PATH_TEMPLATE: &str = r#"https://storage.bunnycdn.com/collegekingsstorage/__bcdn_perma_cache__/pullzone__collegekings__22373407/wp-content/uploads/secured/{}"#;
-const BUNNY_ACCESS_KEY: &str = "ba39c6ef-f9e1-4ea7-a132e6d0f8c2-0aa3-4d1a";
 const RENPY_DIR: &str = r#"D:\renpy-sdk"#;
 const PREVIEW: bool = false;
 
@@ -96,6 +93,8 @@ fn update_steam_status(is_steam: bool) {
 
 #[tokio::main]
 async fn main() {
+    dotenvy::dotenv().expect(".env file not found");
+
     let game_name = PathBuf::from(GAME_DIR)
         .file_name()
         .unwrap()

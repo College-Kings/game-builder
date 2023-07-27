@@ -1,9 +1,9 @@
-use std::{fs::File, path::PathBuf, thread, time::Duration};
+use std::{env, fs::File, path::PathBuf, thread, time::Duration};
 
 use reqwest::blocking::Client;
 use tokio::time;
 
-use crate::{build_game, BUNNY_ACCESS_KEY, BUNNY_PATH_TEMPLATE, GAME_DIR, VERSION};
+use crate::{build_game, BUNNY_PATH_TEMPLATE, GAME_DIR, VERSION};
 
 pub async fn patreon(game_name: String) {
     println!("Starting patreon process...");
@@ -52,7 +52,10 @@ pub fn upload_game(game_name: &str, os: &str) {
 
     let response = client
         .put(url)
-        .header("Accesskey", BUNNY_ACCESS_KEY)
+        .header(
+            "Accesskey",
+            env::var("BUNNY_ACCESS_KEY").expect("Missing Bunny Access Key"),
+        )
         .header("Content-Length", file_size)
         .body(file)
         .send()

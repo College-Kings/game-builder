@@ -1,9 +1,7 @@
-use crate::{
-    build_game, CONTENT_BUILDER_PATH, PREVIEW, STEAM_BUILD_ACCOUNT_PASSWORD,
-    STEAM_BUILD_ACCOUNT_USERNAME, VERSION,
-};
+use crate::{build_game, CONTENT_BUILDER_PATH, PREVIEW, VERSION};
 use std::{
     collections::HashMap,
+    env,
     fs::File,
     io::{BufRead, BufReader, Write},
     path::PathBuf,
@@ -212,8 +210,8 @@ fn upload_game(app_info: &AppInfo) {
 
     let mut steam_process = Command::new(steam_cmd)
         .arg("+login")
-        .arg(STEAM_BUILD_ACCOUNT_USERNAME)
-        .arg(STEAM_BUILD_ACCOUNT_PASSWORD)
+        .arg(env::var("STEAM_BUILD_ACCOUNT_USERNAME").expect("Missing Steam Username"))
+        .arg(env::var("STEAM_BUILD_ACCOUNT_PASSWORD").expect("Missing Steam Password"))
         .arg("+run_app_build")
         .arg(app_script.to_str().unwrap())
         .arg("+quit")
