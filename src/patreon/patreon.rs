@@ -11,18 +11,18 @@ pub async fn patreon(game_name: String) {
 
     let pc_game_name = game_name.clone();
 
-    //    let pc_build_thread = thread::spawn(|| build_game("pc", "zip"));
-    //    time::sleep(Duration::from_secs(30)).await;
-    //    let mac_build_thread = thread::spawn(|| build_game("mac", "zip"));
+    let pc_build_thread = thread::spawn(|| build_game("pc", "zip"));
+    time::sleep(Duration::from_secs(30)).await;
+    let mac_build_thread = thread::spawn(|| build_game("mac", "zip"));
 
-    //    pc_build_thread.join().unwrap();
-    //    mac_build_thread.join().unwrap();
+    pc_build_thread.join().unwrap();
+    mac_build_thread.join().unwrap();
 
     let pc_upload_thread = thread::spawn(move || upload_game(&pc_game_name, "pc"));
-    //    let mac_upload_thread = thread::spawn(move || upload_game(&game_name, "mac"));
+    let mac_upload_thread = thread::spawn(move || upload_game(&game_name, "mac"));
 
     pc_upload_thread.join().unwrap();
-    //    mac_upload_thread.join().unwrap();
+    mac_upload_thread.join().unwrap();
 }
 
 pub fn upload_game(game_name: &str, os: &str) {
