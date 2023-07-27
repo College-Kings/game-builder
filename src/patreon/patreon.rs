@@ -6,6 +6,8 @@ use reqwest::blocking::Client;
 use crate::{build_game, BUNNY_ACCESS_KEY, BUNNY_PATH_TEMPLATE, GAME_DIR, VERSION};
 
 pub async fn patreon(game_name: String) {
+    println!("Starting patreon process...");
+
     let pc_game_name = game_name.clone();
     let mac_game_name = game_name;
 
@@ -17,11 +19,37 @@ pub async fn patreon(game_name: String) {
     task2.join().unwrap();
 }
 
+pub fn build_patreon_versions() {
+    println!("Building patreon versions...");
+
+    println!("Building PC Game...");
+    build_game("pc", "zip");
+
+    println!("Building Mac Game...");
+    build_game("mac", "zip");
+}
+
+pub fn upload_patreon_versions(game_name: String) {
+    println!("Uploading patreon versions...");
+
+    let pc_game_name = game_name.clone();
+    let mac_game_name = game_name;
+
+    println!("Uploading PC Game...");
+    let task1 = thread::spawn(move || upload_game(pc_game_name, "pc".into()));
+
+    println!("Uploading Mac Game...");
+    let task2 = thread::spawn(move || upload_game(mac_game_name, "mac".into()));
+
+    task1.join().unwrap();
+    task2.join().unwrap();
+}
+
 fn handle_pc_game(game_name: String) {
     println!("Building PC Game...");
     build_game("pc", "zip");
 
-    println!("Uploading Game...");
+    println!("Uploading PC Game...");
     upload_game(game_name, "pc".into());
 }
 
@@ -29,7 +57,7 @@ fn handle_mac_game(game_name: String) {
     println!("Building Mac Game...");
     build_game("mac", "zip");
 
-    println!("Uploading Game...");
+    println!("Uploading Mac Game...");
     upload_game(game_name, "mac".into());
 }
 

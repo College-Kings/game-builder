@@ -17,6 +17,8 @@ use super::{
 };
 
 pub fn steam(game_name: String) {
+    println!("Starting Steam Process...");
+
     let apps_info: HashMap<&str, AppInfo> = HashMap::from([
         (
             "College Kings",

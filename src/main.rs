@@ -4,16 +4,18 @@ mod steam;
 
 use std::{
     env,
-    io::{BufRead, BufReader},
+    fs::File,
+    io::{BufRead, BufReader, Read, Write},
     path::PathBuf,
     process::{Command, Stdio},
-    time::Duration,
+    thread,
 };
 
 use action::Action;
 use patreon::patreon::patreon;
 use steam::steam::steam;
-use tokio::task;
+
+use crate::patreon::patreon::{build_patreon_versions, upload_patreon_versions};
 
 const CONTENT_BUILDER_PATH: &str = r#"D:\Steam Build\sdk\tools\ContentBuilder"#;
 const STEAM_BUILD_ACCOUNT_USERNAME: &str = "Crimson_Sky_Admin";
@@ -24,7 +26,7 @@ const RENPY_DIR: &str = r#"D:\renpy-sdk"#;
 const PREVIEW: bool = false;
 
 const GAME_DIR: &str = r#"D:\Crimson Sky\College Kings\College-Kings"#;
-const ACTION: Action = Action::Patreon;
+const ACTION: Action = Action::Steam;
 const VERSION: &str = "1.3.17";
 
 pub fn build_game(package: &str, format: &str) {
@@ -65,6 +67,31 @@ pub fn build_game(package: &str, format: &str) {
     env::set_current_dir(original_dir).unwrap();
 }
 
+fn update_steam_status(is_steam: bool) {
+    let mut script_file_path = PathBuf::from(GAME_DIR);
+    script_file_path.push("game");
+    script_file_path.push("script.rpy");
+
+    let mut file = File::open(&script_file_path).unwrap();
+    let mut file_contents = String::new();
+    file.read_to_string(&mut file_contents).unwrap();
+
+    if is_steam {
+        file_contents = file_contents.replace(
+            "define config.enable_steam = False",
+            "define config.enable_steam = True",
+        );
+    } else {
+        file_contents = file_contents.replace(
+            "define config.enable_steam = True",
+            "define config.enable_steam = False",
+        );
+    }
+
+    let mut file = File::create(script_file_path).unwrap();
+    file.write_all(file_contents.as_bytes()).unwrap();
+}
+
 #[tokio::main]
 async fn main() {
     let game_name = PathBuf::from(GAME_DIR)
@@ -76,23 +103,25 @@ async fn main() {
 
     match ACTION {
         Action::Steam => {
-            println!("Starting Steam Process...");
+            update_steam_status(true);
             steam(game_name);
         }
         Action::Patreon => {
-            println!("Starting Patreon Process...");
+            update_steam_status(false);
             patreon(game_name).await;
         }
         Action::Both => {
-            println!("Starting Patreon Process...");
-            let patreon_task = task::spawn(patreon(game_name.clone()));
+            let patreon_game_name = game_name.clone();
 
-            tokio::time::sleep(Duration::from_secs(30)).await;
+            update_steam_status(false);
+            build_patreon_versions();
+            let patreon_upload_task =
+                thread::spawn(move || upload_patreon_versions(patreon_game_name));
 
-            println!("Starting Steam Process...");
+            update_steam_status(true);
             steam(game_name);
 
-            let _ = patreon_task.await;
+            patreon_upload_task.join().unwrap();
         }
     }
 
