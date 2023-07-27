@@ -1,7 +1,8 @@
-use std::{fs::File, thread, time::Duration};
+use std::{fs::File, path::PathBuf, thread, time::Duration};
 
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::blocking::Client;
+use tokio::time;
 
 use crate::{build_game, BUNNY_ACCESS_KEY, BUNNY_PATH_TEMPLATE, GAME_DIR, VERSION};
 
@@ -9,59 +10,24 @@ pub async fn patreon(game_name: String) {
     println!("Starting patreon process...");
 
     let pc_game_name = game_name.clone();
-    let mac_game_name = game_name;
 
-    let task1 = thread::spawn(move || handle_pc_game(pc_game_name));
-    tokio::time::sleep(Duration::from_secs(30)).await;
-    let task2 = thread::spawn(move || handle_mac_game(mac_game_name));
+    //    let pc_build_thread = thread::spawn(|| build_game("pc", "zip"));
+    //    time::sleep(Duration::from_secs(30)).await;
+    //    let mac_build_thread = thread::spawn(|| build_game("mac", "zip"));
 
-    task1.join().unwrap();
-    task2.join().unwrap();
+    //    pc_build_thread.join().unwrap();
+    //    mac_build_thread.join().unwrap();
+
+    let pc_upload_thread = thread::spawn(move || upload_game(&pc_game_name, "pc"));
+    //    let mac_upload_thread = thread::spawn(move || upload_game(&game_name, "mac"));
+
+    pc_upload_thread.join().unwrap();
+    //    mac_upload_thread.join().unwrap();
 }
 
-pub fn build_patreon_versions() {
-    println!("Building patreon versions...");
+pub fn upload_game(game_name: &str, os: &str) {
+    println!("Uploading {} build...", os);
 
-    println!("Building PC Game...");
-    build_game("pc", "zip");
-
-    println!("Building Mac Game...");
-    build_game("mac", "zip");
-}
-
-pub fn upload_patreon_versions(game_name: String) {
-    println!("Uploading patreon versions...");
-
-    let pc_game_name = game_name.clone();
-    let mac_game_name = game_name;
-
-    println!("Uploading PC Game...");
-    let task1 = thread::spawn(move || upload_game(pc_game_name, "pc".into()));
-
-    println!("Uploading Mac Game...");
-    let task2 = thread::spawn(move || upload_game(mac_game_name, "mac".into()));
-
-    task1.join().unwrap();
-    task2.join().unwrap();
-}
-
-fn handle_pc_game(game_name: String) {
-    println!("Building PC Game...");
-    build_game("pc", "zip");
-
-    println!("Uploading PC Game...");
-    upload_game(game_name, "pc".into());
-}
-
-fn handle_mac_game(game_name: String) {
-    println!("Building Mac Game...");
-    build_game("mac", "zip");
-
-    println!("Uploading Mac Game...");
-    upload_game(game_name, "mac".into());
-}
-
-fn upload_game(game_name: String, os: String) {
     let game_name_without_spaces = game_name.replace(' ', "");
 
     let bunny_root = BUNNY_PATH_TEMPLATE.replace("{}", &game_name_without_spaces.to_lowercase());
@@ -70,12 +36,17 @@ fn upload_game(game_name: String, os: String) {
         bunny_root, game_name_without_spaces, VERSION, os
     );
 
+    let game_path_buf = PathBuf::from(GAME_DIR);
+
     let file_path = format!(
-        r#"{}-dists\{}-{}.zip"#,
-        GAME_DIR, game_name_without_spaces, os
+        r#"{}\{}-dists\{}-{}.zip"#,
+        game_path_buf.parent().unwrap().to_str().unwrap(),
+        game_name_without_spaces,
+        game_name_without_spaces,
+        os
     );
 
-    let file = File::open(file_path).unwrap();
+    let file = File::open(&file_path).expect(&format!("File not found: {}", file_path));
     let file_size = file.metadata().unwrap().len();
 
     let client = Client::builder().timeout(None).build().unwrap();
