@@ -9,13 +9,13 @@ use std::{
     path::PathBuf,
     process::{Command, Stdio},
     thread,
+    time::Duration,
 };
 
 use action::Action;
 use patreon::patreon::patreon;
 use steam::steam::steam;
-
-use crate::patreon::patreon::{build_patreon_versions, upload_patreon_versions};
+use tokio::time;
 
 const CONTENT_BUILDER_PATH: &str = r#"D:\Steam Build\sdk\tools\ContentBuilder"#;
 const STEAM_BUILD_ACCOUNT_USERNAME: &str = "Crimson_Sky_Admin";
@@ -26,10 +26,12 @@ const RENPY_DIR: &str = r#"D:\renpy-sdk"#;
 const PREVIEW: bool = false;
 
 const GAME_DIR: &str = r#"D:\Crimson Sky\College Kings\College-Kings"#;
-const ACTION: Action = Action::Steam;
+const ACTION: Action = Action::Patreon;
 const VERSION: &str = "1.3.17";
 
 pub fn build_game(package: &str, format: &str) {
+    println!("Building {} Game...", package);
+
     let original_dir = env::current_dir().unwrap();
     env::set_current_dir(RENPY_DIR).unwrap();
 
@@ -111,17 +113,28 @@ async fn main() {
             patreon(game_name).await;
         }
         Action::Both => {
-            let patreon_game_name = game_name.clone();
+            let pc_game_name = game_name.clone();
+            let mac_game_name = game_name.clone();
 
             update_steam_status(false);
-            build_patreon_versions();
-            let patreon_upload_task =
-                thread::spawn(move || upload_patreon_versions(patreon_game_name));
+            let pc_build_thread = thread::spawn(|| build_game("pc", "zip"));
+            time::sleep(Duration::from_secs(30)).await;
+            let mac_build_thread = thread::spawn(|| build_game("mac", "zip"));
+
+            pc_build_thread.join().unwrap();
+            mac_build_thread.join().unwrap();
+
+            let pc_upload_thread =
+                thread::spawn(move || patreon::patreon::upload_game(&pc_game_name, "pc"));
+            let mac_upload_thread =
+                thread::spawn(move || patreon::patreon::upload_game(&mac_game_name, "mac"));
 
             update_steam_status(true);
-            steam(game_name);
+            let steam_thread = thread::spawn(|| steam(game_name));
 
-            patreon_upload_task.join().unwrap();
+            steam_thread.join().unwrap();
+            mac_upload_thread.join().unwrap();
+            pc_upload_thread.join().unwrap();
         }
     }
 
