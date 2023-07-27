@@ -1,5 +1,5 @@
 use crate::{
-    build_game, CONTENT_BUILDER_PATH, GAME_DIR, PREVIEW, STEAM_BUILD_ACCOUNT_PASSWORD,
+    build_game, CONTENT_BUILDER_PATH, PREVIEW, STEAM_BUILD_ACCOUNT_PASSWORD,
     STEAM_BUILD_ACCOUNT_USERNAME, VERSION,
 };
 use std::{
@@ -16,7 +16,7 @@ use super::{
     depot_build_config::{DepotBuildConfig, FileMapping},
 };
 
-pub fn steam() {
+pub fn steam(game_name: String) {
     let apps_info: HashMap<&str, AppInfo> = HashMap::from([
         (
             "College Kings",
@@ -53,13 +53,6 @@ pub fn steam() {
             },
         ),
     ]);
-
-    let game_name = PathBuf::from(GAME_DIR)
-        .file_name()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .replace('-', " ");
 
     let app_info = apps_info.get(game_name.as_str()).unwrap();
 
