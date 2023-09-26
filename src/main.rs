@@ -17,14 +17,19 @@ use patreon::patreon::patreon;
 use steam::steam::steam;
 use tokio::time;
 
-const CONTENT_BUILDER_PATH: &str = r#"D:\Steam Build\sdk\tools\ContentBuilder"#;
-const BUNNY_PATH_TEMPLATE: &str = r#"https://storage.bunnycdn.com/collegekingsstorage/__bcdn_perma_cache__/pullzone__collegekings__22373407/wp-content/uploads/secured/{}"#;
-const RENPY_DIR: &str = r#"D:\renpy-sdk"#;
+// use crate::patreon::{
+//     launcher_upload::{generate_manifest, run},
+//     upload_manifest::upload_manifest,
+// };
+
+const CONTENT_BUILDER_PATH: &str = r"D:\Steam Build\sdk\tools\ContentBuilder";
+const BUNNY_PATH_ROOT: &str = r#"https://storage.bunnycdn.com/collegekingsstorage/__bcdn_perma_cache__/pullzone__collegekings__22373407/wp-content/uploads/secured/Game%20Launcher/Delta%20Patching%20Testing"#;
+const RENPY_DIR: &str = r"D:\renpy-sdk";
 const PREVIEW: bool = false;
 
-const GAME_DIR: &str = r#"D:\Crimson Sky\College Kings\College-Kings"#;
-const ACTION: Action = Action::Patreon;
-const VERSION: &str = "1.3.17";
+const GAME_DIR: &str = r"D:\Crimson Sky\College Kings\College-Kings-2";
+const ACTION: Action = Action::Steam;
+const VERSION: &str = "3.2.3";
 
 pub fn build_game(package: &str, format: &str) {
     println!("Building {} Game...", package);
@@ -93,6 +98,7 @@ fn update_steam_status(is_steam: bool) {
 
 #[tokio::main]
 async fn main() {
+    // fn main() {
     dotenvy::dotenv().expect(".env file not found");
 
     let game_name = PathBuf::from(GAME_DIR)
@@ -101,6 +107,8 @@ async fn main() {
         .to_str()
         .unwrap()
         .replace('-', " ");
+
+    // upload_manifest(Path::new("manifest.json"));
 
     match ACTION {
         Action::Steam => {
