@@ -3,7 +3,7 @@ use std::{env, fs::File, path::PathBuf, thread, time::Duration};
 use reqwest::blocking::Client;
 use tokio::time;
 
-use crate::{build_game, BUNNY_PATH_TEMPLATE, GAME_DIR, VERSION};
+use crate::{build_game, BUNNY_PATH_ROOT, GAME_DIR, VERSION};
 
 pub async fn patreon(game_name: String) {
     println!("Starting patreon process...");
@@ -29,7 +29,7 @@ pub fn upload_game(game_name: &str, os: &str) {
 
     let game_name_without_spaces = game_name.replace(' ', "");
 
-    let bunny_root = BUNNY_PATH_TEMPLATE.replace("{}", &game_name.replace(' ', "_").to_lowercase());
+    let bunny_root = BUNNY_PATH_ROOT.replace("{}", &game_name.replace(' ', "_").to_lowercase()); // BUG: BUNNY_ROOT has been changed
     let url = format!(
         "{}/{}-{}-{}.zip",
         bunny_root, game_name_without_spaces, VERSION, os
