@@ -29,7 +29,7 @@ const PREVIEW: bool = false;
 
 const GAME_DIR: &str = r"D:\Crimson Sky\College Kings\College-Kings-2";
 const ACTION: Action = Action::Steam;
-const VERSION: &str = "3.2.3";
+const VERSION: &str = "3.2.6";
 
 pub fn build_game(package: &str, format: &str) {
     println!("Building {} Game...", package);
