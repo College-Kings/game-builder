@@ -203,7 +203,7 @@ fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>, version: St
 
 fn upload_game(app_info: &AppInfo) {
     let mut steam_cmd = PathBuf::from(CONTENT_BUILDER_PATH);
-    steam_cmd.push(r#"builder\steamcmd.exe"#);
+    steam_cmd.push(r"builder\steamcmd.exe");
 
     let mut app_script = PathBuf::from(CONTENT_BUILDER_PATH);
     app_script.push(format!(r#"scripts\app_{}.vdf"#, app_info.app_id));
