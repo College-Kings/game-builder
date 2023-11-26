@@ -2,5 +2,5 @@
 pub enum Action {
     Steam,
     Patreon,
-    Both,
+    All,
 }
