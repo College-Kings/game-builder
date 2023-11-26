@@ -5,10 +5,11 @@ use tokio::time;
 
 use crate::{build_game, BUNNY_PATH_ROOT, GAME_DIR, VERSION};
 
-pub async fn patreon(game_name: String) {
+pub async fn patreon(game_name: &str) {
     println!("Starting patreon process...");
 
-    let pc_game_name = game_name.clone();
+    let pc_game_name = game_name.to_string();
+    let mac_game_name = game_name.to_string();
 
     let pc_build_thread = thread::spawn(|| build_game("pc", "zip"));
     time::sleep(Duration::from_secs(30)).await;
@@ -17,14 +18,14 @@ pub async fn patreon(game_name: String) {
     pc_build_thread.join().unwrap();
     mac_build_thread.join().unwrap();
 
-    let pc_upload_thread = thread::spawn(move || upload_game(&pc_game_name, "pc"));
-    let mac_upload_thread = thread::spawn(move || upload_game(&game_name, "mac"));
+    let pc_upload_thread = thread::spawn(|| upload_game(pc_game_name, "pc"));
+    let mac_upload_thread = thread::spawn(|| upload_game(mac_game_name, "mac"));
 
     pc_upload_thread.join().unwrap();
     mac_upload_thread.join().unwrap();
 }
 
-pub fn upload_game(game_name: &str, os: &str) {
+pub fn upload_game(game_name: String, os: &str) {
     println!("Uploading {} build...", os);
 
     let game_name_without_spaces = game_name.replace(' ', "");
