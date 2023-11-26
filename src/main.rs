@@ -2,6 +2,8 @@ mod action;
 mod patreon;
 mod steam;
 
+use crate::patreon::patreon::patreon;
+use action::Action;
 use std::{
     env,
     fs::File,
@@ -11,10 +13,7 @@ use std::{
     thread,
     time::Duration,
 };
-
-use action::Action;
-use patreon::patreon::patreon;
-use steam::steam::steam;
+use steam::steam;
 use tokio::time;
 
 // use crate::patreon::{
@@ -29,7 +28,7 @@ const PREVIEW: bool = false;
 
 const GAME_DIR: &str = r"D:\Crimson Sky\College Kings\College-Kings-2";
 const ACTION: Action = Action::Steam;
-const VERSION: &str = "3.3.6";
+const VERSION: &str = "3.3.7";
 
 pub fn build_game(package: &str, format: &str) {
     println!("Building {} Game...", package);
@@ -45,17 +44,15 @@ pub fn build_game(package: &str, format: &str) {
         .arg("--format")
         .arg(format)
         .arg(GAME_DIR)
-        .stdout(Stdio::piped())
+        .stdout(Stdio::null())
         .spawn()
         .expect("failed to execute process");
 
     if let Some(steam_stdout) = renpy_process.stdout.take() {
         let reader = BufReader::new(steam_stdout);
 
-        for line in reader.lines() {
-            if let Ok(line) = line {
-                println!("{}", line)
-            }
+        for line in reader.lines().flatten() {
+            println!("{}", line)
         }
     }
 
@@ -112,13 +109,13 @@ async fn main() {
     match ACTION {
         Action::Steam => {
             update_steam_status(true);
-            steam(game_name);
+            steam(&game_name);
         }
         Action::Patreon => {
             update_steam_status(false);
-            patreon(game_name).await;
+            patreon(&game_name).await;
         }
-        Action::Both => {
+        Action::All => {
             let pc_game_name = game_name.clone();
             let mac_game_name = game_name.clone();
 
@@ -131,12 +128,12 @@ async fn main() {
             mac_build_thread.join().unwrap();
 
             let pc_upload_thread =
-                thread::spawn(move || patreon::patreon::upload_game(&pc_game_name, "pc"));
+                thread::spawn(move || patreon::patreon::upload_game(pc_game_name, "pc"));
             let mac_upload_thread =
-                thread::spawn(move || patreon::patreon::upload_game(&mac_game_name, "mac"));
+                thread::spawn(move || patreon::patreon::upload_game(mac_game_name, "mac"));
 
             update_steam_status(true);
-            let steam_thread = thread::spawn(|| steam(game_name));
+            let steam_thread = thread::spawn(move || steam(&game_name));
 
             steam_thread.join().unwrap();
             mac_upload_thread.join().unwrap();
