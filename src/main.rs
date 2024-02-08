@@ -2,7 +2,7 @@ mod action;
 mod patreon;
 mod steam;
 
-use crate::patreon::patreon::patreon;
+use crate::patreon::patreon;
 use action::Action;
 use std::{
     env,
@@ -21,14 +21,15 @@ use tokio::time;
 //     upload_manifest::upload_manifest,
 // };
 
-const CONTENT_BUILDER_PATH: &str = r"D:\Steam Build\sdk\tools\ContentBuilder";
+const CONTENT_BUILDER_PATH: &str = r"D:\steamworks_sdk\sdk\tools\ContentBuilder";
 const BUNNY_PATH_ROOT: &str = r#"https://storage.bunnycdn.com/collegekingsstorage/__bcdn_perma_cache__/pullzone__collegekings__22373407/wp-content/uploads/secured/Game%20Launcher/Delta%20Patching%20Testing"#;
-const RENPY_DIR: &str = r"D:\renpy-sdk";
+const RENPY_DIR: &str = r"D:\renpy-8.2.0-sdk";
 const PREVIEW: bool = false;
 
-const GAME_DIR: &str = r"D:\Crimson Sky\College Kings\College-Kings-2";
+const GAME_DIR: &str = r"D:\Crimson Sky\College Kings\college-kings-2-main";
+const GAME_NAME: &str = "College Kings 2";
 const ACTION: Action = Action::Steam;
-const VERSION: &str = "3.3.7";
+const VERSION: &str = "3.3.9";
 
 pub fn build_game(package: &str, format: &str) {
     println!("Building {} Game...", package);
@@ -48,8 +49,8 @@ pub fn build_game(package: &str, format: &str) {
         .spawn()
         .expect("failed to execute process");
 
-    if let Some(steam_stdout) = renpy_process.stdout.take() {
-        let reader = BufReader::new(steam_stdout);
+    if let Some(stdout) = renpy_process.stdout.take() {
+        let reader = BufReader::new(stdout);
 
         for line in reader.lines().flatten() {
             println!("{}", line)
@@ -97,28 +98,18 @@ fn update_steam_status(is_steam: bool) {
 async fn main() {
     dotenvy::dotenv().expect(".env file not found");
 
-    let game_name = PathBuf::from(GAME_DIR)
-        .file_name()
-        .unwrap()
-        .to_str()
-        .unwrap()
-        .replace('-', " ");
-
     // upload_manifest(Path::new("manifest.json"));
 
     match ACTION {
         Action::Steam => {
             update_steam_status(true);
-            steam(&game_name);
+            steam(GAME_NAME);
         }
         Action::Patreon => {
             update_steam_status(false);
-            patreon(&game_name).await;
+            patreon().await;
         }
         Action::All => {
-            let pc_game_name = game_name.clone();
-            let mac_game_name = game_name.clone();
-
             update_steam_status(false);
             let pc_build_thread = thread::spawn(|| build_game("pc", "zip"));
             time::sleep(Duration::from_secs(30)).await;
@@ -127,13 +118,11 @@ async fn main() {
             pc_build_thread.join().unwrap();
             mac_build_thread.join().unwrap();
 
-            let pc_upload_thread =
-                thread::spawn(move || patreon::patreon::upload_game(pc_game_name, "pc"));
-            let mac_upload_thread =
-                thread::spawn(move || patreon::patreon::upload_game(mac_game_name, "mac"));
+            let pc_upload_thread = thread::spawn(move || patreon::upload_game(GAME_NAME, "pc"));
+            let mac_upload_thread = thread::spawn(move || patreon::upload_game(GAME_NAME, "mac"));
 
             update_steam_status(true);
-            let steam_thread = thread::spawn(move || steam(&game_name));
+            let steam_thread = thread::spawn(move || steam(GAME_NAME));
 
             steam_thread.join().unwrap();
             mac_upload_thread.join().unwrap();
