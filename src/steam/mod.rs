@@ -148,8 +148,8 @@ fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>, version: St
             PREVIEW,
             dlc_info.app_id,
             format!(
-                r#"D:\Steam Build\sdk\tools\ContentBuilder\scripts\depot_{}.vdf"#,
-                dlc_info.app_id
+                r"{}\scripts\depot_{}.vdf",
+                CONTENT_BUILDER_PATH, dlc_info.app_id
             )
             .into(),
         ),
@@ -160,7 +160,8 @@ fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>, version: St
             PREVIEW,
             app_info.app_id + 1,
             format!(
-                r#"D:\Steam Build\sdk\tools\ContentBuilder\scripts\depot_{}.vdf"#,
+                r"{}\scripts\depot_{}.vdf",
+                CONTENT_BUILDER_PATH,
                 app_info.app_id + 1
             )
             .into(),
