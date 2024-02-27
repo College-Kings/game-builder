@@ -224,7 +224,8 @@ fn upload_game(app_info: &AppInfo) {
     if let Some(steam_stdout) = steam_process.stdout.take() {
         let reader = BufReader::new(steam_stdout);
 
-        for line in reader.lines().flatten() {
+        for line in reader.lines() {
+            let line = line.unwrap();
             println!("{}", line)
         }
     }

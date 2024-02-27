@@ -29,7 +29,7 @@ const PREVIEW: bool = false;
 const GAME_DIR: &str = r"D:\Crimson Sky\College Kings\college-kings-2-main";
 const GAME_NAME: &str = "College Kings 2";
 const ACTION: Action = Action::Steam;
-const VERSION: &str = "3.3.9";
+const VERSION: &str = "3.3.10";
 
 pub fn build_game(package: &str, format: &str) {
     println!("Building {} Game...", package);
@@ -52,7 +52,9 @@ pub fn build_game(package: &str, format: &str) {
     if let Some(stdout) = renpy_process.stdout.take() {
         let reader = BufReader::new(stdout);
 
-        for line in reader.lines().flatten() {
+        for line in reader.lines() {
+            let line = line.unwrap();
+
             println!("{}", line)
         }
     }
