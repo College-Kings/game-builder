@@ -14,17 +14,21 @@ pub struct DepotBuildConfig {
 }
 
 impl DepotBuildConfig {
-    pub fn new(
+    pub fn new<P, S>(
         depot_id: i32,
-        content_root: PathBuf,
+        content_root: P,
         file_mapping: FileMapping,
-        file_exclusions: Vec<String>,
-    ) -> DepotBuildConfig {
+        file_exclusions: Vec<S>,
+    ) -> DepotBuildConfig
+    where
+        P: Into<PathBuf>,
+        S: Into<String>,
+    {
         DepotBuildConfig {
             depot_id,
-            content_root: content_root.into_os_string().into_string().unwrap(),
+            content_root: content_root.into().into_os_string().into_string().unwrap(),
             file_mapping,
-            file_exclusions,
+            file_exclusions: file_exclusions.into_iter().map(|s| s.into()).collect(),
         }
     }
 }
@@ -40,10 +44,10 @@ pub struct FileMapping {
 }
 
 impl FileMapping {
-    pub fn new(local_path: String, depot_path: String, recursive: bool) -> FileMapping {
+    pub fn new<S: Into<String>>(local_path: S, depot_path: S, recursive: bool) -> FileMapping {
         FileMapping {
-            local_path,
-            depot_path,
+            local_path: local_path.into(),
+            depot_path: depot_path.into(),
             recursive: (recursive as i32).to_string(),
         }
     }

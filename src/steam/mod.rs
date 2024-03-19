@@ -2,7 +2,7 @@ mod app_build;
 mod app_info;
 mod depot_build_config;
 
-use crate::{build_game, CONTENT_BUILDER_PATH, PREVIEW, VERSION};
+use crate::{build_game, CONTENT_BUILDER_PATH, GAME_NAME, PREVIEW, VERSION};
 use app_build::AppBuild;
 use app_info::AppInfo;
 use depot_build_config::{DepotBuildConfig, FileMapping};
@@ -15,7 +15,7 @@ use std::{
     process::{Command, Stdio},
 };
 
-pub fn steam(game_name: &str) {
+pub fn steam() {
     println!("Starting Steam Process...");
 
     let apps_info: HashMap<&str, AppInfo> = HashMap::from([
@@ -55,7 +55,7 @@ pub fn steam(game_name: &str) {
         ),
     ]);
 
-    let app_info = apps_info.get(game_name).unwrap();
+    let app_info = apps_info.get(GAME_NAME).unwrap();
 
     println!("Building Game...");
     build_game("market", "directory");
@@ -64,7 +64,7 @@ pub fn steam(game_name: &str) {
     create_depot_script(app_info, None);
 
     println!("Creating App Script...");
-    create_app_script(app_info, None, VERSION.into());
+    create_app_script(app_info, None);
 
     println!("Uploading Game...");
     upload_game(app_info);
@@ -74,7 +74,7 @@ pub fn steam(game_name: &str) {
         create_depot_script(app_info, Some(dlc_info));
 
         println!("Creating DLC App Script...");
-        create_app_script(app_info, Some(dlc_info), VERSION.into());
+        create_app_script(app_info, Some(dlc_info));
 
         println!("Uploading DLC {}", dlc_info.name);
         upload_game(dlc_info)
@@ -87,16 +87,16 @@ fn create_depot_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>) {
             dlc_info.app_id,
             PathBuf::from(&app_info.content_path),
             FileMapping::new(dlc_info.content_path.clone(), ".".into(), true),
-            Vec::new(),
+            Vec::<String>::new(),
         ),
         None => DepotBuildConfig::new(
             app_info.app_id + 1,
             PathBuf::from(&app_info.content_path),
-            FileMapping::new("*".into(), ".".into(), true),
+            FileMapping::new("*", ".", true),
             app_info
                 .additional_dlc
                 .iter()
-                .map(|dlc| dlc.content_path.clone())
+                .map(|dlc| &dlc.content_path)
                 .collect(),
         ),
     };
@@ -136,14 +136,14 @@ fn create_depot_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>) {
     file.write_all(vdf_content.as_bytes()).unwrap();
 }
 
-fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>, version: String) {
+fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>) {
     let mut build_output = PathBuf::from(CONTENT_BUILDER_PATH);
     build_output.push(r#"output"#);
 
     let app_build = match dlc_info {
         Some(dlc_info) => AppBuild::new(
             dlc_info.app_id,
-            version,
+            VERSION,
             build_output,
             PREVIEW,
             dlc_info.app_id,
@@ -155,7 +155,7 @@ fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>, version: St
         ),
         None => AppBuild::new(
             app_info.app_id,
-            version,
+            VERSION,
             build_output,
             PREVIEW,
             app_info.app_id + 1,

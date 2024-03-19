@@ -19,25 +19,29 @@ pub struct AppBuild {
 }
 
 impl AppBuild {
-    pub fn new(
+    pub fn new<S, P>(
         app_id: i32,
-        desc: String,
-        build_output: PathBuf,
+        desc: S,
+        build_output: P,
         preview: bool,
         depot_id: i32,
-        depot_path: PathBuf,
-    ) -> AppBuild {
+        depot_path: P,
+    ) -> AppBuild
+    where
+        S: Into<String>,
+        P: Into<PathBuf>,
+    {
         AppBuild {
             app_id,
-            desc,
-            build_output: build_output.into_os_string().into_string().unwrap(),
+            desc: desc.into(),
+            build_output: build_output.into().into_os_string().into_string().unwrap(),
             content_root: String::new(),
             set_live: String::new(),
             preview: preview as i32,
             local: String::new(),
             depots: Depots {
                 depot_id,
-                depot_path: depot_path.into_os_string().into_string().unwrap(),
+                depot_path: depot_path.into().into_os_string().into_string().unwrap(),
             },
         }
     }

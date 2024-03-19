@@ -18,19 +18,21 @@ pub async fn patreon() {
     pc_build_thread.join().unwrap();
     mac_build_thread.join().unwrap();
 
-    let pc_upload_thread = thread::spawn(|| upload_game(GAME_NAME, "pc"));
-    let mac_upload_thread = thread::spawn(|| upload_game(GAME_NAME, "mac"));
+    let pc_upload_thread = thread::spawn(|| upload_game("pc"));
+    let mac_upload_thread = thread::spawn(|| upload_game("mac"));
 
     pc_upload_thread.join().unwrap();
     mac_upload_thread.join().unwrap();
 }
 
-pub fn upload_game(game_name: &str, os: &str) {
+pub fn upload_game<S: AsRef<str>>(os: S) {
+    let os = os.as_ref();
+
     println!("Uploading {} build...", os);
 
-    let game_name_without_spaces = game_name.replace(' ', "");
+    let game_name_without_spaces = GAME_NAME.replace(' ', "");
 
-    let bunny_root = BUNNY_PATH_ROOT.replace("{}", &game_name.replace(' ', "_").to_lowercase()); // BUG: BUNNY_ROOT has been changed
+    let bunny_root = BUNNY_PATH_ROOT.replace("{}", &GAME_NAME.replace(' ', "_").to_lowercase()); // BUG: BUNNY_ROOT has been changed
     let url = format!(
         "{}/{}-{}-{}.zip",
         bunny_root, game_name_without_spaces, VERSION, os

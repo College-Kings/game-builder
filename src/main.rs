@@ -31,7 +31,10 @@ const GAME_NAME: &str = "College Kings 2";
 const ACTION: Action = Action::Steam;
 const VERSION: &str = "3.3.10";
 
-pub fn build_game(package: &str, format: &str) {
+pub fn build_game<S: AsRef<str>>(package: S, format: S) {
+    let package = package.as_ref();
+    let format = format.as_ref();
+
     println!("Building {} Game...", package);
 
     let original_dir = env::current_dir().unwrap();
@@ -105,7 +108,7 @@ async fn main() {
     match ACTION {
         Action::Steam => {
             update_steam_status(true);
-            steam(GAME_NAME);
+            steam();
         }
         Action::Patreon => {
             update_steam_status(false);
@@ -120,11 +123,11 @@ async fn main() {
             pc_build_thread.join().unwrap();
             mac_build_thread.join().unwrap();
 
-            let pc_upload_thread = thread::spawn(move || patreon::upload_game(GAME_NAME, "pc"));
-            let mac_upload_thread = thread::spawn(move || patreon::upload_game(GAME_NAME, "mac"));
+            let pc_upload_thread = thread::spawn(move || patreon::upload_game("pc"));
+            let mac_upload_thread = thread::spawn(move || patreon::upload_game("mac"));
 
             update_steam_status(true);
-            let steam_thread = thread::spawn(move || steam(GAME_NAME));
+            let steam_thread = thread::spawn(steam);
 
             steam_thread.join().unwrap();
             mac_upload_thread.join().unwrap();
