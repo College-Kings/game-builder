@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use crate::{Error, Result};
+use crate::{BUNNY_ROOT, GAME_DIR, VERSION};
 use chrono::Local;
 use reqwest::blocking::Client;
 use sha2::{Digest, Sha256};
@@ -11,48 +13,45 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{BUNNY_PATH_ROOT, GAME_DIR, VERSION};
-
-pub fn run() {
+pub fn run() -> Result<()> {
     let timestamp = Local::now().format("%Y%m%d%H%M%S%.3f").to_string();
 
-    generate_manifest("pc", &timestamp)
+    generate_manifest("pc", &timestamp)?;
+    Ok(())
 }
 
-fn upload_file(root_path: &Path, file_path: &str, os: &str, timestamp: &str) {
+fn upload_file(root_path: &Path, file_path: &str, os: &str, timestamp: &str) -> Result<()> {
     println!("Uploading {}", file_path);
 
     let bunny_path = format!(
         "{}/CK-{}-{}-{}",
-        BUNNY_PATH_ROOT,
+        BUNNY_ROOT,
         VERSION.replace('.', "-"),
         os,
         timestamp
     );
 
-    let file = File::open(root_path).expect("File not found");
-    let file_size = file.metadata().unwrap().len();
+    let file = File::open(root_path)?;
+    let file_size = file.metadata()?.len();
 
-    let client = Client::builder().timeout(None).build().unwrap();
+    let client = Client::builder().timeout(None).build()?;
 
     let response = client
         .put(format!("{}/{}", bunny_path, file_path))
-        .header(
-            "Accesskey",
-            env::var("BUNNY_ACCESS_KEY").expect("Missing Bunny Access Key"),
-        )
+        .header("Accesskey", env::var("BUNNY_ACCESS_KEY")?)
         .header("Content-Length", file_size)
         .body(file)
-        .send()
-        .unwrap();
+        .send()?;
 
     // Check the response status code
     if !response.status().is_success() {
         println!("Failed to upload the file. Status: {:?}", response.status());
     }
+
+    Ok(())
 }
 
-pub fn generate_manifest(os: &str, timestamp: &str) {
+pub fn generate_manifest(os: &str, timestamp: &str) -> Result<()> {
     let mut game_path_buf = PathBuf::from(GAME_DIR);
     game_path_buf.pop();
     game_path_buf.push("CollegeKings-dists");
@@ -60,13 +59,15 @@ pub fn generate_manifest(os: &str, timestamp: &str) {
 
     let mut manifest: HashMap<String, String> = HashMap::new();
 
-    walk_directory_and_upload(&game_path_buf, &mut manifest, &game_path_buf, os, timestamp);
+    walk_directory_and_upload(&game_path_buf, &mut manifest, &game_path_buf, os, timestamp)?;
 
-    let options = serde_json::to_string_pretty(&manifest).unwrap();
+    let options = serde_json::to_string_pretty(&manifest)?;
 
     let manifest_path = PathBuf::from(GAME_DIR).join("manifest.json");
-    let mut file = File::create(manifest_path).unwrap();
-    file.write_all(options.as_bytes()).unwrap();
+    let mut file = File::create(manifest_path)?;
+    file.write_all(options.as_bytes())?;
+
+    Ok(())
 }
 
 fn walk_directory_and_upload(
@@ -75,35 +76,37 @@ fn walk_directory_and_upload(
     game_path: &Path,
     os: &str,
     timestamp: &str,
-) {
-    let files = fs::read_dir(root).unwrap();
+) -> Result<()> {
+    let files = fs::read_dir(root)?;
 
     for entry in files {
-        let entry = entry.unwrap();
+        let entry = entry?;
         let path = entry.path();
         let file_path = path
             .strip_prefix(game_path)
             .unwrap_or(&path)
             .to_str()
-            .unwrap();
+            .ok_or_else(|| Error::InvalidPath(path.clone()))?;
 
         if path.is_file() {
-            upload_file(&path, file_path, os, timestamp);
-            manifest.insert(file_path.into(), sha256_checksum(&path));
+            upload_file(&path, file_path, os, timestamp)?;
+            manifest.insert(file_path.into(), sha256_checksum(&path)?);
         } else {
-            walk_directory_and_upload(&path, manifest, game_path, os, timestamp);
+            walk_directory_and_upload(&path, manifest, game_path, os, timestamp)?;
         }
     }
+
+    Ok(())
 }
 
-fn sha256_checksum(file_path: &Path) -> String {
-    let mut file = File::open(file_path).unwrap();
+fn sha256_checksum(file_path: &Path) -> Result<String> {
+    let mut file = File::open(file_path)?;
     let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer).unwrap();
+    file.read_to_end(&mut buffer)?;
 
     let mut hasher = Sha256::new();
     hasher.update(&buffer);
     let result = hasher.finalize();
 
-    format!("{:x}", result)
+    Ok(format!("{:x}", result))
 }

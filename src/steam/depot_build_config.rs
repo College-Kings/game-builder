@@ -1,6 +1,6 @@
-use std::path::PathBuf;
-
+use crate::Result;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 #[derive(Deserialize, Serialize)]
 pub struct DepotBuildConfig {
@@ -19,17 +19,17 @@ impl DepotBuildConfig {
         content_root: P,
         file_mapping: FileMapping,
         file_exclusions: Vec<S>,
-    ) -> DepotBuildConfig
+    ) -> Result<DepotBuildConfig>
     where
         P: Into<PathBuf>,
         S: Into<String>,
     {
-        DepotBuildConfig {
+        Ok(DepotBuildConfig {
             depot_id,
-            content_root: content_root.into().into_os_string().into_string().unwrap(),
+            content_root: content_root.into().into_os_string().into_string()?,
             file_mapping,
             file_exclusions: file_exclusions.into_iter().map(|s| s.into()).collect(),
-        }
+        })
     }
 }
 

@@ -1,6 +1,6 @@
-use std::path::PathBuf;
-
+use crate::Result;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 #[derive(Deserialize, Serialize)]
 pub struct AppBuild {
@@ -26,24 +26,24 @@ impl AppBuild {
         preview: bool,
         depot_id: i32,
         depot_path: P,
-    ) -> AppBuild
+    ) -> Result<AppBuild>
     where
         S: Into<String>,
         P: Into<PathBuf>,
     {
-        AppBuild {
+        Ok(AppBuild {
             app_id,
             desc: desc.into(),
-            build_output: build_output.into().into_os_string().into_string().unwrap(),
+            build_output: build_output.into().into_os_string().into_string()?,
             content_root: String::new(),
             set_live: String::new(),
             preview: preview as i32,
             local: String::new(),
             depots: Depots {
                 depot_id,
-                depot_path: depot_path.into().into_os_string().into_string().unwrap(),
+                depot_path: depot_path.into().into_os_string().into_string()?,
             },
-        }
+        })
     }
 }
 
