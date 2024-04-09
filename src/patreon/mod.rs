@@ -28,9 +28,7 @@ pub async fn patreon() -> Result<()> {
     Ok(())
 }
 
-pub fn upload_game<S: AsRef<str>>(os: S) -> Result<()> {
-    let os = os.as_ref();
-
+pub fn upload_game(os: &str) -> Result<()> {
     println!("Uploading {} build...", os);
 
     let game_name_without_spaces = GAME_NAME.replace(' ', "");

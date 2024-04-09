@@ -14,14 +14,13 @@ pub struct DepotBuildConfig {
 }
 
 impl DepotBuildConfig {
-    pub fn new<P, S>(
+    pub fn new<S>(
         depot_id: i32,
-        content_root: P,
+        content_root: impl Into<PathBuf>,
         file_mapping: FileMapping,
         file_exclusions: Vec<S>,
     ) -> Result<DepotBuildConfig>
     where
-        P: Into<PathBuf>,
         S: Into<String>,
     {
         Ok(DepotBuildConfig {
@@ -44,7 +43,11 @@ pub struct FileMapping {
 }
 
 impl FileMapping {
-    pub fn new<S: Into<String>>(local_path: S, depot_path: S, recursive: bool) -> FileMapping {
+    pub fn new(
+        local_path: impl Into<String>,
+        depot_path: impl Into<String>,
+        recursive: bool,
+    ) -> FileMapping {
         FileMapping {
             local_path: local_path.into(),
             depot_path: depot_path.into(),

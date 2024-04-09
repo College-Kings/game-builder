@@ -19,18 +19,14 @@ pub struct AppBuild {
 }
 
 impl AppBuild {
-    pub fn new<S, P>(
+    pub fn new(
         app_id: i32,
-        desc: S,
-        build_output: P,
+        desc: impl Into<String>,
+        build_output: impl Into<PathBuf>,
         preview: bool,
         depot_id: i32,
-        depot_path: P,
-    ) -> Result<AppBuild>
-    where
-        S: Into<String>,
-        P: Into<PathBuf>,
-    {
+        depot_path: impl Into<PathBuf>,
+    ) -> Result<AppBuild> {
         Ok(AppBuild {
             app_id,
             desc: desc.into(),

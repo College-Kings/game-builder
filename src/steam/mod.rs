@@ -86,7 +86,7 @@ fn create_depot_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>) -> Result
         Some(dlc_info) => DepotBuildConfig::new(
             dlc_info.app_id,
             PathBuf::from(&app_info.content_path),
-            FileMapping::new(dlc_info.content_path.clone(), ".".into(), true),
+            FileMapping::new(&dlc_info.content_path, ".", true),
             Vec::<String>::new(),
         )?,
         None => DepotBuildConfig::new(
@@ -151,8 +151,7 @@ fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>) -> Result<(
             format!(
                 r"{}\scripts\depot_{}.vdf",
                 CONTENT_BUILDER_PATH, dlc_info.app_id
-            )
-            .into(),
+            ),
         )?,
         None => AppBuild::new(
             app_info.app_id,
@@ -164,8 +163,7 @@ fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>) -> Result<(
                 r"{}\scripts\depot_{}.vdf",
                 CONTENT_BUILDER_PATH,
                 app_info.app_id + 1
-            )
-            .into(),
+            ),
         )?,
     };
 

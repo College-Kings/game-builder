@@ -6,7 +6,7 @@ pub struct AppInfo {
 }
 
 impl AppInfo {
-    pub fn new<S: Into<String>>(name: S, app_id: i32, content_path: S) -> Self {
+    pub fn new(name: impl Into<String>, app_id: i32, content_path: impl Into<String>) -> Self {
         AppInfo {
             name: name.into(),
             app_id,

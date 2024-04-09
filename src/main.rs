@@ -32,10 +32,7 @@ const GAME_NAME: &str = "College Kings 2";
 const ACTION: Action = Action::Steam;
 const VERSION: &str = "3.3.14";
 
-pub fn build_game<S: AsRef<str>>(package: S, format: S) -> Result<()> {
-    let package = package.as_ref();
-    let format = format.as_ref();
-
+pub fn build_game(package: &str, format: &str) -> Result<()> {
     println!("Building {} Game...", package);
 
     let original_dir = env::current_dir()?;
