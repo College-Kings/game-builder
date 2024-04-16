@@ -2,7 +2,8 @@ mod app_build;
 mod app_info;
 mod depot_build_config;
 
-use crate::{build_game, CONTENT_BUILDER_PATH, GAME_NAME, PREVIEW, VERSION};
+use crate::renpy::build_game;
+use crate::{update_steam_status, CONTENT_BUILDER_PATH, GAME_NAME, PREVIEW};
 use crate::{Error, Result};
 use app_build::AppBuild;
 use app_info::AppInfo;
@@ -16,25 +17,24 @@ use std::{
     process::{Command, Stdio},
 };
 
-pub fn steam() -> Result<()> {
+const CONTENT_PATH: &str = r"D:\Crimson Sky\College Kings\CollegeKings-dists\CollegeKings-market";
+
+pub fn steam(version: &str) -> Result<()> {
     println!("Starting Steam Process...");
+
+    update_steam_status(true)?;
 
     let apps_info: HashMap<&str, AppInfo> = HashMap::from([
         (
             "College Kings",
-            AppInfo::new(
-                "College Kings",
-                1463120,
-                r"D:\Crimson Sky\College Kings\CollegeKings-dists\CollegeKings-market",
-            ),
+            AppInfo::new("College Kings", 1463120, CONTENT_PATH),
         ),
         (
             "College Kings 2",
             AppInfo {
                 name: "College Kings 2".into(),
                 app_id: 1924480,
-                content_path:
-                    r"D:\Crimson Sky\College Kings\CollegeKings2-dists\CollegeKings2-market".into(),
+                content_path: CONTENT_PATH.to_string(),
                 additional_dlc: vec![
                     AppInfo::new(
                         "College Kings 2 - Episode 2 \"The Pool Party\"",
@@ -56,13 +56,13 @@ pub fn steam() -> Result<()> {
         .ok_or_else(|| Error::GameNotFound)?;
 
     println!("Building Game...");
-    build_game("market", "directory")?;
+    build_game(&["market"], "directory")?;
 
     println!("Creating Depot Script...");
     create_depot_script(app_info, None)?;
 
     println!("Creating App Script...");
-    create_app_script(app_info, None)?;
+    create_app_script(app_info, version, None)?;
 
     println!("Uploading Game...");
     upload_game(app_info)?;
@@ -72,7 +72,7 @@ pub fn steam() -> Result<()> {
         create_depot_script(app_info, Some(dlc_info))?;
 
         println!("Creating DLC App Script...");
-        create_app_script(app_info, Some(dlc_info))?;
+        create_app_script(app_info, version, Some(dlc_info))?;
 
         println!("Uploading DLC {}", dlc_info.name);
         upload_game(dlc_info)?;
@@ -93,11 +93,7 @@ fn create_depot_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>) -> Result
             app_info.app_id + 1,
             PathBuf::from(&app_info.content_path),
             FileMapping::new("*", ".", true),
-            app_info
-                .additional_dlc
-                .iter()
-                .map(|dlc| &dlc.content_path)
-                .collect(),
+            app_info.additional_dlc.iter().map(|dlc| &dlc.content_path),
         )?,
     };
 
@@ -137,14 +133,14 @@ fn create_depot_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>) -> Result
     Ok(())
 }
 
-fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>) -> Result<()> {
+fn create_app_script(app_info: &AppInfo, version: &str, dlc_info: Option<&AppInfo>) -> Result<()> {
     let mut build_output = PathBuf::from(CONTENT_BUILDER_PATH);
     build_output.push("output");
 
     let app_build = match dlc_info {
         Some(dlc_info) => AppBuild::new(
             dlc_info.app_id,
-            VERSION,
+            version,
             build_output,
             PREVIEW,
             dlc_info.app_id,
@@ -155,7 +151,7 @@ fn create_app_script(app_info: &AppInfo, dlc_info: Option<&AppInfo>) -> Result<(
         )?,
         None => AppBuild::new(
             app_info.app_id,
-            VERSION,
+            version,
             build_output,
             PREVIEW,
             app_info.app_id + 1,
