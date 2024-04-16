@@ -92,7 +92,7 @@ async fn main() -> Result<()> {
 
     match ACTION {
         Action::Steam => steam::steam(&version)?,
-        Action::Bunny => bunny::bunny(&version).await?,
+        Action::Bunny => bunny::bunny(version).await?,
         Action::SteamBunny => {
             let steam_thread = thread::spawn({
                 let version = version.clone();
@@ -101,7 +101,7 @@ async fn main() -> Result<()> {
             sleep(Duration::from_secs(30)).await;
             let bunny_thread = thread::spawn({
                 let version = version.clone();
-                move || async move { bunny::bunny(&version).await }
+                move || async move { bunny::bunny(version).await }
             });
 
             steam_thread.join().map_err(Error::Thread)??;

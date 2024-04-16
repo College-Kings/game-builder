@@ -1,31 +1,40 @@
-use std::{env, path::PathBuf};
+use std::{env, path::PathBuf, sync::Arc, thread, time::Duration};
 
 use bunny_cdn_wrapper::edge_storage::BunnyStorage;
 use reqwest::Response;
 
-use crate::{renpy::build_game, update_steam_status, Result, GAME_NAME};
+use crate::{renpy::build_game, update_steam_status, Error, Result, GAME_DIR, GAME_NAME};
 
-const DIST_DIRECTORY: &str = r"D:\Crimson Sky\College Kings\CollegeKings2-dists\";
-
-pub async fn bunny(version: &str) -> Result<()> {
+pub async fn bunny(version: Arc<String>) -> Result<()> {
     println!("Starting Bunny Process...");
 
     update_steam_status(false)?;
 
-    build_game(&["pc", "mac"], "zip")?;
+    let pc_handler = thread::spawn({
+        let version = version.clone();
+        || async move {
+            build_game("pc", "zip")?;
+            upload_game(format!("{}-{}-pc.zip", GAME_NAME.replace(' ', ""), version)).await
+        }
+    });
+    thread::sleep(Duration::from_secs(30));
+    let mac_handler = thread::spawn({
+        let version = version.clone();
+        || async move {
+            build_game("mac", "zip")?;
+            upload_game(format!(
+                "{}-{}-mac.zip",
+                GAME_NAME.replace(' ', ""),
+                version
+            ))
+            .await
+        }
+    });
 
-    let pc_handler = tokio::spawn(upload_game(format!(
-        "{}-{}-pc.zip",
-        GAME_NAME.replace(' ', ""),
-        version
-    )));
-    let mac_handler = tokio::spawn(upload_game(format!(
-        "{}-{}-mac.zip",
-        GAME_NAME.replace(' ', ""),
-        version
-    )));
-
-    let responses = tokio::try_join!(pc_handler, mac_handler)?;
+    let responses = vec![
+        pc_handler.join().map_err(Error::Thread)?.await?,
+        mac_handler.join().map_err(Error::Thread)?.await?,
+    ];
 
     println!("Responses: {:?}", responses);
 
@@ -38,9 +47,14 @@ async fn upload_game(file_name: String) -> Result<Response> {
     let bunny_storage =
         BunnyStorage::new("collegekingsstorage", env::var("BUNNY_ACCESS_KEY")?, "de")?;
 
-    let dist_directory = PathBuf::from(DIST_DIRECTORY);
+    let file_path = PathBuf::from(GAME_DIR)
+        .parent()
+        .ok_or_else(|| Error::InvalidPath(PathBuf::from(GAME_DIR)))?
+        .join(format!("{}-dists", GAME_NAME.replace(' ', "")))
+        .join(&file_name);
 
-    let file_path = dist_directory.join(&file_name);
+    println!("File Path: {:?}", file_path);
+
     let response = bunny_storage
         .upload(
             file_path,
