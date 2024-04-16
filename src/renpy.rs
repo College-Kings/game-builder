@@ -6,14 +6,21 @@ use std::{
 
 use crate::{Result, GAME_DIR, RENPY_DIR};
 
-pub fn build_game(packages: &[&str], format: &str) -> Result<()> {
-    println!("Building {}...", packages.join(", "));
+pub fn build_game(package: &str, format: &str) -> Result<()> {
+    println!("Building {package}...");
 
     let renpy_dir = PathBuf::from(RENPY_DIR);
 
     let mut renpy_child = Command::new(renpy_dir.join("renpy.exe"))
-        .args(["launcher", "distribute", GAME_DIR, "--format", format])
-        .args(packages.iter().flat_map(|package| ["--package", package]))
+        .args([
+            "launcher",
+            "distribute",
+            GAME_DIR,
+            "--package",
+            package,
+            "--format",
+            format,
+        ])
         .stdout(Stdio::piped())
         .current_dir(&renpy_dir)
         .spawn()?;

@@ -16,9 +16,9 @@ use crate::{BUNNY_ROOT, GAME_DIR, GAME_NAME};
 pub async fn patreon(version: Arc<str>) -> Result<()> {
     println!("Starting patreon process...");
 
-    let pc_build_thread = thread::spawn(|| build_game(&["pc"], "zip"));
+    let pc_build_thread = thread::spawn(|| build_game("pc", "zip"));
     time::sleep(Duration::from_secs(30)).await;
-    let mac_build_thread = thread::spawn(|| build_game(&["mac"], "zip"));
+    let mac_build_thread = thread::spawn(|| build_game("mac", "zip"));
 
     pc_build_thread.join().map_err(Error::Thread)??;
     mac_build_thread.join().map_err(Error::Thread)??;

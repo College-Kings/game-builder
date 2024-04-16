@@ -56,7 +56,7 @@ pub fn steam(version: &str) -> Result<()> {
         .ok_or_else(|| Error::GameNotFound)?;
 
     println!("Building Game...");
-    build_game(&["market"], "directory")?;
+    build_game("market", "directory")?;
 
     println!("Creating Depot Script...");
     create_depot_script(app_info, None)?;
