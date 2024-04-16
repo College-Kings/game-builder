@@ -14,13 +14,14 @@ pub struct DepotBuildConfig {
 }
 
 impl DepotBuildConfig {
-    pub fn new<S>(
+    pub fn new<I, S>(
         depot_id: i32,
         content_root: impl Into<PathBuf>,
         file_mapping: FileMapping,
-        file_exclusions: Vec<S>,
+        file_exclusions: I,
     ) -> Result<DepotBuildConfig>
     where
+        I: IntoIterator<Item = S>,
         S: Into<String>,
     {
         Ok(DepotBuildConfig {
