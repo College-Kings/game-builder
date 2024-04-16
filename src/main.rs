@@ -98,9 +98,30 @@ fn update_steam_status(is_steam: bool) -> Result<()> {
     Ok(())
 }
 
+fn get_version() -> Result<String> {
+    let version_file_path = PathBuf::from(GAME_DIR).join("game").join("script.rpy");
+
+    let mut file = File::open(version_file_path)?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+
+    let version = VERSION_REGEX
+        .captures(&contents)
+        .ok_or(Error::VersionNotFound)?
+        .get(1)
+        .ok_or(Error::VersionNotFound)?
+        .as_str()
+        .to_string();
+
+    Ok(version)
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
-    let _ = dotenvy::dotenv();
+    dotenvy::dotenv()?;
+
+    let version: Arc<String> = Arc::from(get_version()?);
+    println!("Version: {}", version);
 
     // upload_manifest(Path::new("manifest.json"));
 
