@@ -105,34 +105,51 @@ async fn main() -> Result<()> {
     // upload_manifest(Path::new("manifest.json"));
 
     match ACTION {
-        Action::Steam => {
-            update_steam_status(true)?;
-            steam()?;
-        }
-        Action::Patreon => {
-            update_steam_status(false)?;
-            patreon().await?;
-        }
-        Action::All => {
-            update_steam_status(false)?;
-            let pc_build_thread = thread::spawn(|| build_game("pc", "zip"));
-            time::sleep(Duration::from_secs(30)).await;
-            let mac_build_thread = thread::spawn(|| build_game("mac", "zip"));
-
-            pc_build_thread.join().map_err(Error::Thread)??;
-            mac_build_thread.join().map_err(Error::Thread)??;
-
-            let pc_upload_thread = thread::spawn(|| patreon::upload_game("pc"));
-            let mac_upload_thread = thread::spawn(|| patreon::upload_game("mac"));
-
-            update_steam_status(true)?;
-            let steam_thread = thread::spawn(steam);
+        Action::Steam => steam::steam(&version)?,
+        Action::Bunny => bunny::bunny(&version).await?,
+        Action::SteamBunny => {
+            let steam_thread = thread::spawn({
+                let version = version.clone();
+                move || steam::steam(&version)
+            });
+            sleep(Duration::from_secs(30)).await;
+            let bunny_thread = thread::spawn({
+                let version = version.clone();
+                move || async move { bunny::bunny(&version).await }
+            });
 
             steam_thread.join().map_err(Error::Thread)??;
-            mac_upload_thread.join().map_err(Error::Thread)??;
-            pc_upload_thread.join().map_err(Error::Thread)??;
+            bunny_thread.join().map_err(Error::Thread)?.await?;
         }
+        _ => unimplemented!("Action not implemented"),
     }
+
+    //     Action::All => {
+    //         update_steam_status(false)?;
+    //         let pc_build_thread = thread::spawn(|| build_game("pc", "zip"));
+    //         time::sleep(Duration::from_secs(30)).await;
+    //         let mac_build_thread = thread::spawn(|| build_game("mac", "zip"));
+
+    //         pc_build_thread.join().map_err(Error::Thread)??;
+    //         mac_build_thread.join().map_err(Error::Thread)??;
+
+    //         let pc_upload_thread = thread::spawn({
+    //             let version = version.clone();
+    //             move || patreon::upload_game(&version, "pc")
+    //         });
+    //         let mac_upload_thread = thread::spawn({
+    //             let version = version.clone();
+    //             move || patreon::upload_game(&version, "mac")
+    //         });
+
+    //         update_steam_status(true)?;
+    //         let steam_thread = thread::spawn(move || steam(&version));
+
+    //         steam_thread.join().map_err(Error::Thread)??;
+    //         mac_upload_thread.join().map_err(Error::Thread)??;
+    //         pc_upload_thread.join().map_err(Error::Thread)??;
+    //     }
+    // }
 
     println!("DONE!");
     Ok(())
