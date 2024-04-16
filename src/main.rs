@@ -1,22 +1,23 @@
 mod action;
+mod bunny;
 mod error;
-mod patreon;
+mod launcher;
+mod regex;
+pub mod renpy;
 mod steam;
 
 pub use crate::error::{Error, Result};
-use crate::patreon::patreon;
 use action::Action;
+use regex::VERSION_REGEX;
 use std::{
-    env,
     fs::File,
-    io::{BufRead, BufReader, Read, Write},
+    io::{Read, Write},
     path::PathBuf,
-    process::{Command, Stdio},
+    sync::Arc,
     thread,
     time::Duration,
 };
-use steam::steam;
-use tokio::time;
+use tokio::time::sleep;
 // use crate::patreon::{
 //     launcher_upload::{generate_manifest, run},
 //     upload_manifest::upload_manifest,
@@ -27,15 +28,18 @@ const BUNNY_ROOT: &str = r"https://storage.bunnycdn.com/collegekingsstorage/__bc
 const RENPY_DIR: &str = r"D:\renpy-8.2.0-sdk";
 const PREVIEW: bool = false;
 
-const GAME_DIR: &str = r"D:\Crimson Sky\College Kings\college-kings-2-main";
-const GAME_NAME: &str = "College Kings 2";
-const ACTION: Action = Action::Steam;
-const VERSION: &str = "3.3.16";
+// College Kings 1
+const GAME_DIR: &str = r"D:\Crimson Sky\College Kings\College-Kings";
+const GAME_NAME: &str = "College Kings";
+
+// College Kings 2
+// const GAME_DIR: &str = r"D:\Crimson Sky\College Kings\college-kings-2-main";
+// const GAME_NAME: &str = "College Kings 2";
+
+const ACTION: Action = Action::Bunny;
 
 fn update_steam_status(is_steam: bool) -> Result<()> {
-    let mut script_file_path = PathBuf::from(GAME_DIR);
-    script_file_path.push("game");
-    script_file_path.push("script.rpy");
+    let script_file_path = PathBuf::from(GAME_DIR).join("game").join("script.rpy");
 
     let mut file = File::open(&script_file_path)?;
     let mut file_contents = String::new();
