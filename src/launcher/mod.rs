@@ -1,26 +1,33 @@
+#![allow(dead_code)]
 pub mod launcher_upload;
 pub mod upload_manifest;
 
-use std::{env, fs::File, path::PathBuf, thread, time::Duration};
+use std::{env, fs::File, path::PathBuf, sync::Arc, thread, time::Duration};
 
-use crate::error::{Error, Result};
+use crate::{
+    error::{Error, Result},
+    renpy::build_game,
+};
 use reqwest::blocking::Client;
 use tokio::time;
 
-use crate::{build_game, BUNNY_ROOT, GAME_DIR, GAME_NAME, VERSION};
+use crate::{BUNNY_ROOT, GAME_DIR, GAME_NAME};
 
-pub async fn patreon() -> Result<()> {
+pub async fn patreon(version: Arc<str>) -> Result<()> {
     println!("Starting patreon process...");
 
-    let pc_build_thread = thread::spawn(|| build_game("pc", "zip"));
+    let pc_build_thread = thread::spawn(|| build_game(&["pc"], "zip"));
     time::sleep(Duration::from_secs(30)).await;
-    let mac_build_thread = thread::spawn(|| build_game("mac", "zip"));
+    let mac_build_thread = thread::spawn(|| build_game(&["mac"], "zip"));
 
     pc_build_thread.join().map_err(Error::Thread)??;
     mac_build_thread.join().map_err(Error::Thread)??;
 
-    let pc_upload_thread = thread::spawn(|| upload_game("pc"));
-    let mac_upload_thread = thread::spawn(|| upload_game("mac"));
+    let pc_upload_thread = thread::spawn({
+        let version = version.clone();
+        move || upload_game(&version, "pc")
+    });
+    let mac_upload_thread = thread::spawn(move || upload_game(&version, "mac"));
 
     pc_upload_thread.join().map_err(Error::Thread)??;
     mac_upload_thread.join().map_err(Error::Thread)??;
@@ -28,7 +35,7 @@ pub async fn patreon() -> Result<()> {
     Ok(())
 }
 
-pub fn upload_game(os: &str) -> Result<()> {
+pub fn upload_game(version: &str, os: &str) -> Result<()> {
     println!("Uploading {} build...", os);
 
     let game_name_without_spaces = GAME_NAME.replace(' ', "");
@@ -36,7 +43,7 @@ pub fn upload_game(os: &str) -> Result<()> {
     let bunny_root = BUNNY_ROOT.replace("{}", &GAME_NAME.replace(' ', "_").to_lowercase()); // BUG: BUNNY_ROOT has been changed
     let url = format!(
         "{}/{}-{}-{}.zip",
-        bunny_root, game_name_without_spaces, VERSION, os
+        bunny_root, game_name_without_spaces, version, os
     );
 
     let game_path_buf = PathBuf::from(GAME_DIR);

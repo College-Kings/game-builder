@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use crate::{Error, Result};
-use crate::{BUNNY_ROOT, GAME_DIR, VERSION};
+use crate::{BUNNY_ROOT, GAME_DIR};
 use chrono::Local;
 use reqwest::blocking::Client;
 use sha2::{Digest, Sha256};
@@ -13,20 +13,26 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub fn run() -> Result<()> {
+pub fn run(version: &str) -> Result<()> {
     let timestamp = Local::now().format("%Y%m%d%H%M%S%.3f").to_string();
 
-    generate_manifest("pc", &timestamp)?;
+    generate_manifest(version, "pc", &timestamp)?;
     Ok(())
 }
 
-fn upload_file(root_path: &Path, file_path: &str, os: &str, timestamp: &str) -> Result<()> {
+fn upload_file(
+    root_path: &Path,
+    file_path: &str,
+    version: &str,
+    os: &str,
+    timestamp: &str,
+) -> Result<()> {
     println!("Uploading {}", file_path);
 
     let bunny_path = format!(
         "{}/CK-{}-{}-{}",
         BUNNY_ROOT,
-        VERSION.replace('.', "-"),
+        version.replace('.', "-"),
         os,
         timestamp
     );
@@ -51,15 +57,24 @@ fn upload_file(root_path: &Path, file_path: &str, os: &str, timestamp: &str) -> 
     Ok(())
 }
 
-pub fn generate_manifest(os: &str, timestamp: &str) -> Result<()> {
-    let mut game_path_buf = PathBuf::from(GAME_DIR);
-    game_path_buf.pop();
-    game_path_buf.push("CollegeKings-dists");
-    game_path_buf.push("CollegeKings-pc");
+pub fn generate_manifest(version: &str, os: &str, timestamp: &str) -> Result<()> {
+    let game_path_buf = PathBuf::from(GAME_DIR)
+        .parent()
+        .ok_or_else(|| Error::InvalidPath(PathBuf::from(GAME_DIR)))?
+        .to_path_buf()
+        .join("CollegeKings-dists")
+        .join("CollegeKings-pc");
 
     let mut manifest: HashMap<String, String> = HashMap::new();
 
-    walk_directory_and_upload(&game_path_buf, &mut manifest, &game_path_buf, os, timestamp)?;
+    walk_directory_and_upload(
+        &game_path_buf,
+        &mut manifest,
+        &game_path_buf,
+        version,
+        os,
+        timestamp,
+    )?;
 
     let options = serde_json::to_string_pretty(&manifest)?;
 
@@ -74,6 +89,7 @@ fn walk_directory_and_upload(
     root: &Path,
     manifest: &mut HashMap<String, String>,
     game_path: &Path,
+    version: &str,
     os: &str,
     timestamp: &str,
 ) -> Result<()> {
@@ -89,10 +105,10 @@ fn walk_directory_and_upload(
             .ok_or_else(|| Error::InvalidPath(path.clone()))?;
 
         if path.is_file() {
-            upload_file(&path, file_path, os, timestamp)?;
+            upload_file(&path, file_path, version, os, timestamp)?;
             manifest.insert(file_path.into(), sha256_checksum(&path)?);
         } else {
-            walk_directory_and_upload(&path, manifest, game_path, os, timestamp)?;
+            walk_directory_and_upload(&path, manifest, game_path, version, os, timestamp)?;
         }
     }
 
