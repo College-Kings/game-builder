@@ -31,10 +31,10 @@ pub async fn bunny(version: Arc<String>) -> Result<()> {
         }
     });
 
-    let responses = vec![
-        pc_handler.join().map_err(Error::Thread)?.await?,
-        mac_handler.join().map_err(Error::Thread)?.await?,
-    ];
+    let responses = tokio::try_join!(
+        pc_handler.join().map_err(Error::Thread)?,
+        mac_handler.join().map_err(Error::Thread)?
+    )?;
 
     println!("Responses: {:?}", responses);
 
