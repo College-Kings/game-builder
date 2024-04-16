@@ -32,45 +32,6 @@ const GAME_NAME: &str = "College Kings 2";
 const ACTION: Action = Action::Steam;
 const VERSION: &str = "3.3.16";
 
-pub fn build_game(package: &str, format: &str) -> Result<()> {
-    println!("Building {} Game...", package);
-
-    let original_dir = env::current_dir()?;
-    env::set_current_dir(RENPY_DIR)?;
-
-    let mut renpy_process = Command::new("./renpy.exe")
-        .arg("launcher")
-        .arg("distribute")
-        .arg("--package")
-        .arg(package)
-        .arg("--format")
-        .arg(format)
-        .arg(GAME_DIR)
-        .stdout(Stdio::null())
-        .spawn()?;
-
-    if let Some(stdout) = renpy_process.stdout.take() {
-        let reader = BufReader::new(stdout);
-
-        for line in reader.lines() {
-            let line = line?;
-
-            println!("{}", line)
-        }
-    }
-
-    let status = renpy_process.wait()?;
-    if status.success() {
-        println!("Build successful")
-    } else {
-        println!("Build failed: {:?}", status.code())
-    }
-
-    env::set_current_dir(original_dir)?;
-
-    Ok(())
-}
-
 fn update_steam_status(is_steam: bool) -> Result<()> {
     let mut script_file_path = PathBuf::from(GAME_DIR);
     script_file_path.push("game");
