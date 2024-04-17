@@ -1,6 +1,6 @@
 use std::{env, path::PathBuf, sync::Arc, thread, time::Duration};
 
-use bunny_cdn_wrapper::edge_storage::BunnyStorage;
+use bunny_cdn_wrapper::BunnyStorage;
 use reqwest::Response;
 
 use crate::{renpy::build_game, update_steam_status, Error, Result, GAME_DIR, GAME_NAME};
@@ -58,7 +58,7 @@ async fn upload_game(file_name: String) -> Result<Response> {
     let response = bunny_storage
         .upload(
             file_path,
-            format!(
+            &format!(
                 "__bcdn_perma_cache__/pullzone__collegekings__22373407/wp-content/uploads/secured/{}/{file_name}",
                 GAME_NAME.to_lowercase().replace(' ', "_"),
             ),
