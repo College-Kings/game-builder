@@ -13,7 +13,7 @@ pub enum Error {
     Bunny(bunny_cdn_wrapper::Error),
     JoinError(tokio::task::JoinError),
     Thread(Box<dyn Any + Send>),
-    GameNotFound,
+    InvalidGame(String),
     InvalidPath(std::path::PathBuf),
     VersionNotFound,
 }
@@ -30,7 +30,7 @@ impl std::fmt::Display for Error {
             Error::Bunny(error) => write!(f, "Bunny error: {}", error),
             Error::JoinError(error) => write!(f, "Join error: {}", error),
             Error::Thread(_) => write!(f, "Thread error"),
-            Error::GameNotFound => write!(f, "Game not found"),
+            Error::InvalidGame(game) => write!(f, "Invalid game: {}", game),
             Error::InvalidPath(path) => write!(f, "Invalid path: {:?}", path),
             Error::VersionNotFound => write!(f, "Version not found"),
         }
