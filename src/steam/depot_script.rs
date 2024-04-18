@@ -22,12 +22,12 @@ pub fn create_depot_scripts(app_ids: &[u32]) -> Result<()> {
         let local_path = if index == 0 {
             String::from("*")
         } else {
-            format!("*ep{}.rpa", index + 1)
+            format!("*ep{}*", index + 1)
         };
 
         let exclusions = if index == 0 {
             (2..=latest_episode)
-                .map(|episode| format!("*ep{}.rpa", episode))
+                .map(|episode| format!("*ep{}*", episode))
                 .collect::<Vec<String>>()
         } else {
             vec![]
