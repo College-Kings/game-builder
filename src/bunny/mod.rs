@@ -1,47 +1,10 @@
-use std::{env, path::PathBuf, sync::Arc, thread, time::Duration};
+use std::{env, path::PathBuf};
 
 use bunny_cdn_wrapper::BunnyStorage;
-use reqwest::Response;
 
-use crate::{renpy::build_game, update_steam_status, Error, Result, GAME_DIR, GAME_NAME};
+use crate::{Error, Result, GAME_DIR, GAME_NAME};
 
-pub async fn bunny(version: Arc<String>) -> Result<()> {
-    println!("Starting Bunny Process...");
-
-    update_steam_status(false)?;
-
-    let pc_handler = thread::spawn({
-        let version = version.clone();
-        || async move {
-            build_game("pc", "zip")?;
-            upload_game(format!("{}-{}-pc.zip", GAME_NAME.replace(' ', ""), version)).await
-        }
-    });
-    thread::sleep(Duration::from_secs(30));
-    let mac_handler = thread::spawn({
-        let version = version.clone();
-        || async move {
-            build_game("mac", "zip")?;
-            upload_game(format!(
-                "{}-{}-mac.zip",
-                GAME_NAME.replace(' ', ""),
-                version
-            ))
-            .await
-        }
-    });
-
-    let responses = tokio::try_join!(
-        pc_handler.join().map_err(Error::Thread)?,
-        mac_handler.join().map_err(Error::Thread)?
-    )?;
-
-    println!("Responses: {:?}", responses);
-
-    Ok(())
-}
-
-async fn upload_game(file_name: String) -> Result<Response> {
+pub async fn upload_game(file_name: String) -> Result<()> {
     println!("Uploading {} build...", file_name);
 
     let bunny_storage =
@@ -53,8 +16,6 @@ async fn upload_game(file_name: String) -> Result<Response> {
         .join(format!("{}-dists", GAME_NAME.replace(' ', "")))
         .join(&file_name);
 
-    println!("File Path: {:?}", file_path);
-
     let response = bunny_storage
         .upload(
             file_path,
@@ -65,5 +26,9 @@ async fn upload_game(file_name: String) -> Result<Response> {
         )
         .await?;
 
-    Ok(response)
+    if !response.status().is_success() {
+        println!("Failed to upload the file. Status: {:?}", response);
+    }
+
+    Ok(())
 }

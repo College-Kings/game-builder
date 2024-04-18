@@ -2,41 +2,55 @@ mod action;
 mod bunny;
 mod error;
 mod launcher;
+mod patreon;
 mod regex;
 pub mod renpy;
 mod steam;
+pub mod utils;
 
 pub use crate::error::{Error, Result};
 use action::Action;
+use lazy_static::lazy_static;
+use patreon::patreon_thread;
 use regex::VERSION_REGEX;
+use renpy::build_game;
 use std::{
+    collections::HashMap,
     fs::File,
     io::{Read, Write},
     path::PathBuf,
     sync::Arc,
-    thread,
-    time::Duration,
 };
-use tokio::time::sleep;
+use utils::tokio_flatten;
 // use crate::patreon::{
 //     launcher_upload::{generate_manifest, run},
 //     upload_manifest::upload_manifest,
 // };
 
-const CONTENT_BUILDER_PATH: &str = r"D:\steamworks_sdk\sdk\tools\ContentBuilder";
-const BUNNY_ROOT: &str = r"https://storage.bunnycdn.com/collegekingsstorage/__bcdn_perma_cache__/pullzone__collegekings__22373407/wp-content/uploads/secured/Game%20Launcher/Delta%20Patching%20Testing";
 const RENPY_DIR: &str = r"D:\renpy-8.2.0-sdk";
+const BUNNY_ROOT: &str = r"https://storage.bunnycdn.com/collegekingsstorage/__bcdn_perma_cache__/pullzone__collegekings__22373407/wp-content/uploads/secured/Game%20Launcher/Delta%20Patching%20Testing";
+
+// -- Steam
+const CONTENT_BUILDER_PATH: &str = r"D:\steamworks_sdk\sdk\tools\ContentBuilder";
 const PREVIEW: bool = false;
+lazy_static! {
+    pub static ref APPS: HashMap<&'static str, Vec<u32>> = {
+        let mut map = HashMap::new();
+        map.insert("College Kings", vec![1463120]);
+        map.insert("College Kings 2", vec![1924480, 2100540, 2267960, 2725540]);
+        map
+    };
+}
 
 // College Kings 1
-const GAME_DIR: &str = r"D:\Crimson Sky\College Kings\College-Kings";
-const GAME_NAME: &str = "College Kings";
+// const GAME_DIR: &str = r"D:\Crimson Sky\College Kings\College-Kings";
+// const GAME_NAME: &str = "College Kings";
 
 // College Kings 2
-// const GAME_DIR: &str = r"D:\Crimson Sky\College Kings\college-kings-2-main";
-// const GAME_NAME: &str = "College Kings 2";
+const GAME_DIR: &str = r"D:\Crimson Sky\College Kings\college-kings-2-main";
+const GAME_NAME: &str = "College Kings 2";
 
-const ACTION: Action = Action::Bunny;
+const ACTION: Action = Action::SteamBunny;
 
 fn update_steam_status(is_steam: bool) -> Result<()> {
     let script_file_path = PathBuf::from(GAME_DIR).join("game").join("script.rpy");
@@ -86,29 +100,34 @@ async fn main() -> Result<()> {
     dotenvy::dotenv()?;
 
     let version: Arc<String> = Arc::from(get_version()?);
-    println!("Version: {}", version);
 
     // upload_manifest(Path::new("manifest.json"));
 
     match ACTION {
-        Action::Steam => steam::steam(&version)?,
-        Action::Bunny => bunny::bunny(version).await?,
+        Action::Steam => {
+            update_steam_status(true)?;
+            build_game("market", "directory")?;
+            steam::steam(&version)?;
+        }
+        Action::Bunny => {
+            update_steam_status(false)?;
+            let (pc_thread, mac_thread) = patreon_thread(version.clone())?;
+            tokio::try_join!(tokio_flatten(pc_thread), tokio_flatten(mac_thread))?;
+        }
         Action::SteamBunny => {
-            let steam_thread = thread::spawn({
-                let version = version.clone();
-                move || steam::steam(&version)
-            });
-            sleep(Duration::from_secs(30)).await;
-            let bunny_thread = thread::spawn({
-                let version = version.clone();
-                move || async move { bunny::bunny(version).await }
-            });
+            update_steam_status(false)?;
+            let (pc_thread, mac_thread) = patreon_thread(version.clone())?;
 
-            steam_thread.join().map_err(Error::Thread)??;
-            bunny_thread.join().map_err(Error::Thread)?.await?;
+            update_steam_status(true)?;
+            build_game("market", "directory")?;
+            steam::steam(&version)?;
+
+            tokio::try_join!(tokio_flatten(pc_thread), tokio_flatten(mac_thread))?;
         }
         _ => unimplemented!("Action not implemented"),
     }
+
+    update_steam_status(false)?;
 
     //     Action::All => {
     //         update_steam_status(false)?;
