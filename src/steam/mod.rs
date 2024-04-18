@@ -1,5 +1,4 @@
 use std::{
-    env,
     io::{BufRead, BufReader},
     path::PathBuf,
     process::{Command, Stdio},
@@ -53,10 +52,7 @@ fn upload_app(app_id: u32) -> Result<()> {
         .join(format!("app_{}.vdf", app_id));
 
     let mut steam_process = Command::new(steam_cmd)
-        .arg("+login")
-        .arg(env::var("STEAM_BUILD_ACCOUNT_USERNAME")?)
-        .arg(env::var("STEAM_BUILD_ACCOUNT_PASSWORD")?)
-        .arg("+run_app_build")
+        .args(["+login", "crimson_sky_admin", "+run_app_build"])
         .arg(
             app_script
                 .to_str()
