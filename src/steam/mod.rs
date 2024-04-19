@@ -2,7 +2,6 @@ use std::{
     io::{BufRead, BufReader},
     path::PathBuf,
     process::{Command, Stdio},
-    thread,
 };
 
 mod app_scripts;
@@ -28,16 +27,9 @@ pub fn steam(version: &str) -> Result<()> {
 }
 
 fn upload_apps(app_ids: &[u32]) -> Result<()> {
-    let handles: Vec<_> = app_ids
-        .iter()
-        .map(|app_id| {
-            let app_id = *app_id;
-            thread::spawn(move || upload_app(app_id))
-        })
-        .collect();
-
-    for handle in handles {
-        handle.join().map_err(Error::Thread)??;
+    for app_id in app_ids {
+        println!("Uploading app {}", app_id);
+        upload_app(*app_id)?;
     }
 
     Ok(())
