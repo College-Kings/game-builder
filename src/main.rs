@@ -14,13 +14,7 @@ use lazy_static::lazy_static;
 use patreon::patreon_thread;
 use regex::VERSION_REGEX;
 use renpy::build_game;
-use std::{
-    collections::HashMap,
-    fs::File,
-    io::{Read, Write},
-    path::PathBuf,
-    sync::Arc,
-};
+use std::{collections::HashMap, fs, path::PathBuf, sync::Arc};
 use utils::tokio_flatten;
 // use crate::patreon::{
 //     launcher_upload::{generate_manifest, run},
@@ -55,9 +49,7 @@ const ACTION: Action = Action::SteamBunny;
 fn update_steam_status(is_steam: bool) -> Result<()> {
     let script_file_path = PathBuf::from(GAME_DIR).join("game").join("script.rpy");
 
-    let mut file = File::open(&script_file_path)?;
-    let mut file_contents = String::new();
-    file.read_to_string(&mut file_contents)?;
+    let mut file_contents = fs::read_to_string(&script_file_path)?;
 
     if is_steam {
         file_contents = file_contents.replace(
@@ -71,18 +63,14 @@ fn update_steam_status(is_steam: bool) -> Result<()> {
         );
     }
 
-    let mut file = File::create(script_file_path)?;
-    file.write_all(file_contents.as_bytes())?;
+    fs::write(script_file_path, file_contents)?;
 
     Ok(())
 }
 
 fn get_version() -> Result<String> {
     let version_file_path = PathBuf::from(GAME_DIR).join("game").join("script.rpy");
-
-    let mut file = File::open(version_file_path)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
+    let contents = fs::read_to_string(version_file_path)?;
 
     let version = VERSION_REGEX
         .captures(&contents)
@@ -122,6 +110,7 @@ async fn main() -> Result<()> {
             build_game("market", "directory")?;
             steam::steam(&version)?;
 
+            println!("Waiting for BunnyCDN to finish uploading...");
             tokio::try_join!(tokio_flatten(pc_thread), tokio_flatten(mac_thread))?;
         }
         _ => unimplemented!("Action not implemented"),

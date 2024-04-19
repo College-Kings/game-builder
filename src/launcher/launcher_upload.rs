@@ -9,7 +9,6 @@ use std::{
     collections::HashMap,
     env,
     fs::{self, File},
-    io::{Read, Write},
     path::{Path, PathBuf},
 };
 
@@ -76,11 +75,8 @@ pub fn generate_manifest(version: &str, os: &str, timestamp: &str) -> Result<()>
         timestamp,
     )?;
 
-    let options = serde_json::to_string_pretty(&manifest)?;
-
     let manifest_path = PathBuf::from(GAME_DIR).join("manifest.json");
-    let mut file = File::create(manifest_path)?;
-    file.write_all(options.as_bytes())?;
+    fs::write(manifest_path, serde_json::to_string_pretty(&manifest)?)?;
 
     Ok(())
 }
@@ -116,9 +112,7 @@ fn walk_directory_and_upload(
 }
 
 fn sha256_checksum(file_path: &Path) -> Result<String> {
-    let mut file = File::open(file_path)?;
-    let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer)?;
+    let buffer = fs::read(file_path)?;
 
     let mut hasher = Sha256::new();
     hasher.update(&buffer);
