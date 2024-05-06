@@ -4,6 +4,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub enum Error {
+    InvalidGame(Box<str>),
+    InvalidPath(std::path::PathBuf),
+    VersionNotFound(Box<str>),
+
     Io(std::io::Error),
     Reqwest(reqwest::Error),
     EnvVar(std::env::VarError),
@@ -13,27 +17,11 @@ pub enum Error {
     Bunny(bunny_cdn_wrapper::Error),
     JoinError(tokio::task::JoinError),
     Thread(Box<dyn Any + Send>),
-    InvalidGame(String),
-    InvalidPath(std::path::PathBuf),
-    VersionNotFound,
 }
 
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Error::Io(error) => write!(f, "IO error: {}", error),
-            Error::Reqwest(error) => write!(f, "Reqwest error: {}", error),
-            Error::EnvVar(error) => write!(f, "Environment variable error: {}", error),
-            Error::SerdeJson(error) => write!(f, "Serde JSON error: {}", error),
-            Error::OsString(error) => write!(f, "OsString error: {:?}", error),
-            Error::Dotenvy(error) => write!(f, "Dotenvy error: {}", error),
-            Error::Bunny(error) => write!(f, "Bunny error: {}", error),
-            Error::JoinError(error) => write!(f, "Join error: {}", error),
-            Error::Thread(_) => write!(f, "Thread error"),
-            Error::InvalidGame(game) => write!(f, "Invalid game: {}", game),
-            Error::InvalidPath(path) => write!(f, "Invalid path: {:?}", path),
-            Error::VersionNotFound => write!(f, "Version not found"),
-        }
+        write!(f, "{:?}", self)
     }
 }
 
