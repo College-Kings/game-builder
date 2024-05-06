@@ -17,7 +17,7 @@ pub fn steam(version: &str) -> Result<()> {
 
     let app_ids = APPS
         .get(GAME_NAME)
-        .ok_or_else(|| Error::InvalidGame(GAME_NAME.to_string()))?;
+        .ok_or_else(|| Error::InvalidGame(GAME_NAME.into()))?;
 
     create_app_scripts(app_ids, version)?;
     create_depot_scripts(app_ids)?;

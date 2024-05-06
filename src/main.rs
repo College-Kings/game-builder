@@ -74,9 +74,9 @@ fn get_version() -> Result<String> {
 
     let version = VERSION_REGEX
         .captures(&contents)
-        .ok_or(Error::VersionNotFound)?
+        .ok_or_else(|| Error::VersionNotFound(contents.as_str().into()))?
         .get(1)
-        .ok_or(Error::VersionNotFound)?
+        .ok_or_else(|| Error::VersionNotFound(contents.as_str().into()))?
         .as_str()
         .to_string();
 
