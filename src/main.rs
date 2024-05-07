@@ -27,6 +27,7 @@ const BUNNY_ROOT: &str = r"https://storage.bunnycdn.com/collegekingsstorage/__bc
 // -- Steam
 const CONTENT_BUILDER_PATH: &str = r"D:\steamworks_sdk\sdk\tools\ContentBuilder";
 const PREVIEW: bool = false;
+
 lazy_static! {
     pub static ref APPS: HashMap<&'static str, Vec<u32>> = {
         let mut map = HashMap::new();
