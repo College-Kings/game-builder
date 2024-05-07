@@ -25,10 +25,10 @@ pub fn create_depot_scripts(app_ids: &[u32]) -> Result<()> {
             format!("*ep{}*", index + 1)
         };
 
-        let exclusions = if index == 0 {
+        let exclusions: Vec<String> = if index == 0 {
             (2..=latest_episode)
                 .map(|episode| format!("*ep{}*", episode))
-                .collect::<Vec<String>>()
+                .collect()
         } else {
             vec![]
         };
