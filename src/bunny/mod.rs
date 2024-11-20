@@ -8,7 +8,7 @@ pub async fn upload_game(file_name: String) -> Result<()> {
     println!("Uploading {} build...", file_name);
 
     let bunny_storage =
-        BunnyStorage::new("collegekingsstorage", env::var("BUNNY_ACCESS_KEY")?, "de")?;
+        BunnyStorage::new("collegekingsstorage", &env::var("BUNNY_ACCESS_KEY")?, "de")?;
 
     let file_path = PathBuf::from(GAME_DIR)
         .parent()
