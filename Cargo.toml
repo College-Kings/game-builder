@@ -6,17 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-#azure_core = "0.13.0"
-#azure_identity = "0.13.0"
-#azure_storage = "0.13.0"
-#azure_storage_blobs = "0.13.1"
 bunny-cdn-wrapper = { git = "https://github.com/ViridianLink/bunny-cdn-wrapper" }
-chrono = "*"
 dotenvy = "*"
 lazy_static = "*"
 regex = "*"
-reqwest = { version = "*", features = ["stream", "blocking"] }
-serde = { version = "*", features = ["derive"] }
-serde_json = "*"
-sha2 = "*"
 tokio = { version = "*", features = ["macros", "rt-multi-thread"] }
+
+[profile.release]
+opt-level = 3
+panic = "abort"
+strip = true
+codegen-units = 1
+lto = "fat"

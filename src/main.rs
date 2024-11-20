@@ -1,7 +1,6 @@
 mod action;
 mod bunny;
 mod error;
-mod launcher;
 mod patreon;
 mod regex;
 pub mod renpy;
@@ -21,8 +20,7 @@ use utils::tokio_flatten;
 //     upload_manifest::upload_manifest,
 // };
 
-const RENPY_DIR: &str = r"D:\renpy-8.2.0-sdk";
-const BUNNY_ROOT: &str = r"https://storage.bunnycdn.com/collegekingsstorage/__bcdn_perma_cache__/pullzone__collegekings__22373407/wp-content/uploads/secured/Game%20Launcher/Delta%20Patching%20Testing";
+const RENPY_DIR: &str = r"D:\renpy-sdk";
 
 // -- Steam
 const CONTENT_BUILDER_PATH: &str = r"D:\steamworks_sdk\sdk\tools\ContentBuilder";
