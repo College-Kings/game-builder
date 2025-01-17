@@ -124,6 +124,8 @@ async fn main() {
                 Result::Ok(())
             })
         } else {
+            pc_built.store(true, Ordering::Release);
+            mac_built.store(true, Ordering::Release);
             thread::spawn(|| Result::Ok(()))
         };
     let steam_thread = if ACTION.contains(Action::STEAM) {
