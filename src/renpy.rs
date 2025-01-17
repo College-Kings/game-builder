@@ -4,9 +4,9 @@ use std::{
     process::{Command, Stdio},
 };
 
-use crate::{Result, GAME_DIR, RENPY_DIR};
+use crate::{GAME_DIR, RENPY_DIR};
 
-pub fn build_game(package: &str, format: &str) -> Result<()> {
+pub fn build_game(package: &str, format: &str) {
     println!("Building {package}...");
 
     let renpy_dir = PathBuf::from(RENPY_DIR);
@@ -23,22 +23,21 @@ pub fn build_game(package: &str, format: &str) -> Result<()> {
         ])
         .stdout(Stdio::piped())
         .current_dir(&renpy_dir)
-        .spawn()?;
+        .spawn()
+        .unwrap();
 
     if let Some(stdout) = renpy_child.stdout.take() {
         let reader = BufReader::new(stdout);
 
         for line in reader.lines() {
-            println!("{}", line?)
+            println!("{}", line.unwrap())
         }
     }
 
-    let status = renpy_child.wait()?;
+    let status = renpy_child.wait().unwrap();
     if status.success() {
         println!("Build successful")
     } else {
         println!("Build failed: {:?}", status.code())
     }
-
-    Ok(())
 }

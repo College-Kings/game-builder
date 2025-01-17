@@ -1,10 +1,9 @@
-#[allow(dead_code)]
-pub enum Action {
-    Steam,
-    Bunny,
-    Launcher,
+use bitflags::bitflags;
 
-    All,
-    Patreon,
-    SteamBunny,
+bitflags! {
+    pub struct Action: u8 {
+        const STEAM = 1 << 0;
+        const PATREON = 1 << 1;
+        const OPPAIMAN = 1 << 2;
+    }
 }

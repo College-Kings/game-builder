@@ -1,34 +1,29 @@
-use std::{env, path::PathBuf};
+use std::env ;
+use std::path::Path;
 
 use bunny_cdn_wrapper::BunnyStorage;
 
-use crate::{Error, Result, GAME_DIR, GAME_NAME};
 
-pub async fn upload_game(file_name: String) -> Result<()> {
-    println!("Uploading {} build...", file_name);
+pub async fn upload(src_path: &Path, dest_path: String) {    
+    println!("Uploading {} build...", dest_path);
+    println!("Source path: {}", src_path.display());
+
+    let api_key = env::var("BUNNY_ACCESS_KEY").unwrap();
 
     let bunny_storage =
-        BunnyStorage::new("collegekingsstorage", &env::var("BUNNY_ACCESS_KEY")?, "de")?;
-
-    let file_path = PathBuf::from(GAME_DIR)
-        .parent()
-        .ok_or_else(|| Error::InvalidPath(PathBuf::from(GAME_DIR)))?
-        .join(format!("{}-dists", GAME_NAME.replace(' ', "")))
-        .join(&file_name);
+        BunnyStorage::new("collegekingsstorage", &api_key, "de").unwrap();
 
     let response = bunny_storage
         .upload(
-            file_path,
+            src_path,
             &format!(
-                "__bcdn_perma_cache__/pullzone__collegekings__22373407/wp-content/uploads/secured/{}/{file_name}",
-                GAME_NAME.to_lowercase().replace(' ', "_"),
+                "__bcdn_perma_cache__/pullzone__collegekings__22373407/wp-content/uploads/secured/{dest_path}",
+                
             ),
         )
-        .await?;
+        .await.unwrap();
 
     if !response.status().is_success() {
         println!("Failed to upload the file. Status: {:?}", response);
     }
-
-    Ok(())
 }

@@ -1,15 +1,13 @@
 use std::{fs, path::PathBuf};
 
-use crate::{Error, Result, CONTENT_BUILDER_PATH, PREVIEW};
+use crate::{Result, CONTENT_BUILDER_PATH, PREVIEW};
 
-pub fn create_app_scripts(app_ids: &[u32], version: &str) -> Result<()> {
+pub fn create_app_scripts(app_ids: &[u32], version: &str) {
     for (index, app_id) in app_ids.iter().enumerate() {
         let depot_id = if index == 0 { *app_id + 1 } else { *app_id };
 
-        create_app_script(*app_id, depot_id, version)?;
+        create_app_script(*app_id, depot_id, version).unwrap();
     }
-
-    Ok(())
 }
 
 pub fn create_app_script(app_id: u32, depot_id: u32, version: &str) -> Result<()> {
@@ -34,19 +32,17 @@ pub fn create_app_script(app_id: u32, depot_id: u32, version: &str) -> Result<()
 }}"#,
         app_id,
         version,
-        output_dir
-            .to_str()
-            .ok_or_else(|| Error::InvalidPath(output_dir.clone()))?,
+        output_dir.to_str().unwrap(),
         PREVIEW as u8,
         depot_id,
         script_dir
             .join(format!("depot_{}.vdf", depot_id))
             .to_str()
-            .ok_or_else(|| Error::InvalidPath(script_dir.clone()))?
+            .unwrap()
     );
 
     let file_path = script_dir.join(format!("app_{}.vdf", app_id));
-    fs::write(file_path, vdf_content)?;
+    fs::write(file_path, vdf_content).unwrap();
 
     Ok(())
 }

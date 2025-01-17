@@ -5,7 +5,6 @@ use crate::Error;
 pub async fn tokio_flatten<T>(handle: JoinHandle<Result<T, Error>>) -> Result<T, Error> {
     match handle.await {
         Ok(Ok(result)) => Ok(result),
-        Ok(Err(err)) => Err(err),
-        Err(err) => Err(err.into()),
+        err => err.unwrap(),
     }
 }

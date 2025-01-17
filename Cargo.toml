@@ -7,10 +7,13 @@ edition = "2021"
 
 [dependencies]
 bunny-cdn-wrapper = { git = "https://github.com/ViridianLink/bunny-cdn-wrapper" }
-dotenvy = "*"
-lazy_static = "*"
-regex = "*"
+bitflags = { version = "*", default-features = false }
+dotenvy = { version = "*", default-features = false }
+lazy_static = { version = "*", default-features = false }
+regex = { version = "*", default-features = false }
 tokio = { version = "*", features = ["macros", "rt-multi-thread"] }
+walkdir = { version = "*", default-features = false }
+zip = { version = "*", default-features = false, features = ["deflate"] }
 
 [profile.release]
 opt-level = 3
