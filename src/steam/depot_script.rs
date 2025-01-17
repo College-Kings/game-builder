@@ -16,8 +16,12 @@ pub fn create_depot_scripts(app_ids: &[u32]) {
 
     let latest_episode = app_ids.len();
 
-    for (index, app_id) in app_ids.iter().enumerate() {
-        let depot_id = if index == 0 { *app_id + 1 } else { *app_id };
+    for (index, app_id) in app_ids.iter().copied().enumerate() {
+        if app_id == 0 {
+            continue;
+        }
+
+        let depot_id = if index == 0 { app_id + 1 } else { app_id };
 
         let local_path = if index == 0 {
             String::from("*")
