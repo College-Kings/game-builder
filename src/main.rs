@@ -38,7 +38,10 @@ lazy_static! {
     pub static ref APPS: HashMap<&'static str, Vec<u32>> = {
         let mut map = HashMap::new();
         map.insert("College Kings", vec![1463120]);
-        map.insert("College Kings 2", vec![1924480, 2100540, 2267960, 2725540]);
+        map.insert(
+            "College Kings 2",
+            vec![1924480, 2100540, 2267960, 2725540, 0, 3126690],
+        );
         map
     };
 }
@@ -51,7 +54,7 @@ lazy_static! {
 const GAME_DIR: &str = r"D:\Crimson Sky\College Kings\college-kings-2-main";
 const GAME_NAME: &str = "College Kings 2";
 
-const ACTION: Action = Action::PATREON.union(Action::STEAM);
+const ACTION: Action = Action::STEAM;
 
 fn update_steam_status(is_steam: bool) {
     let script_file_path = PathBuf::from(GAME_DIR).join("game").join("script.rpy");
